@@ -1,0 +1,9 @@
+backend/arts/
+template/
+testdata/
+docs/
+files/
+plans/
+quests/
+.clari/
+.claude/

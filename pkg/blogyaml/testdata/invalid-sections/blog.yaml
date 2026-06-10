@@ -1,0 +1,11 @@
+# 오류 예제: sections-empty — 섹션이 하나도 없음
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, en]
+sections: []
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }

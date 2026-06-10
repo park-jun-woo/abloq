@@ -1,0 +1,11 @@
+# 오류 예제: lang-bcp47 — "korean!"은 BCP-47 언어 코드가 아님
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, korean!, en]
+sections: [tech]
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }

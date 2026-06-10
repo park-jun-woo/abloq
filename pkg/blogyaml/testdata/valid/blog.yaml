@@ -1,0 +1,82 @@
+# parkjunwoo.com — 12개 언어 골든 예제 (전 룰 통과)
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+
+languages: [ko, en, ja, zh, es, fr, de, pt, ru, ar, hi, vi]
+
+sections: [opinion, tech, lecture, review, news]
+
+structure:
+  order: [image, attribution, body, related, further, sources, changelog]
+  headings:
+    related:
+      ko: "관련 글"
+      en: "Related"
+      ja: "関連記事"
+      zh: "相关文章"
+      es: "Relacionados"
+      fr: "Articles liés"
+      de: "Verwandte Artikel"
+      pt: "Relacionados"
+      ru: "Похожие статьи"
+      ar: "مقالات ذات صلة"
+      hi: "संबंधित लेख"
+      vi: "Bài viết liên quan"
+    further:
+      ko: "더 읽기"
+      en: "Further Reading"
+      ja: "さらに読む"
+      zh: "延伸阅读"
+      es: "Lecturas adicionales"
+      fr: "Pour aller plus loin"
+      de: "Weiterführende Lektüre"
+      pt: "Leitura adicional"
+      ru: "Дополнительное чтение"
+      ar: "قراءات إضافية"
+      hi: "आगे पढ़ें"
+      vi: "Đọc thêm"
+    sources:
+      ko: "출처"
+      en: "Sources"
+      ja: "出典"
+      zh: "来源"
+      es: "Fuentes"
+      fr: "Sources"
+      de: "Quellen"
+      pt: "Fontes"
+      ru: "Источники"
+      ar: "المصادر"
+      hi: "स्रोत"
+      vi: "Nguồn"
+    changelog:
+      ko: "변경 이력"
+      en: "Changelog"
+      ja: "変更履歴"
+      zh: "更新日志"
+      es: "Historial de cambios"
+      fr: "Journal des modifications"
+      de: "Änderungsprotokoll"
+      pt: "Histórico de alterações"
+      ru: "История изменений"
+      ar: "سجل التغييرات"
+      hi: "परिवर्तन सूची"
+      vi: "Nhật ký thay đổi"
+
+geo:
+  crawlers:
+    training: allow
+    search: allow
+    fetch: allow
+    bytespider: block
+  llms_txt: auto
+  jsonld: [Article, Person]
+  freshness_days: 90
+  min_sources: 1
+  min_internal_links: 2
+
+deploy:
+  provider: s3-cloudfront
+  terraform: true
+  indexnow: true

@@ -1,0 +1,15 @@
+# abloq codebook — filefunc 어휘 (Phase001 범위, 이후 Phase에서 증보)
+required:
+  feature:
+    blogyaml: "blog.yaml SSOT — 스키마, strict 파싱, 기본값 주입, 검증 룰"
+    cli: "abloq CLI — cobra 명령과 진단 출력"
+  type:
+    schema: "blog.yaml 스키마 구조체와 진단 모델"
+    parser: "strict YAML 파싱, 기본값 주입, 라인 인덱스"
+    rule: "blog.yaml 개별 검증 룰 (룰ID 1개 담당)"
+    command: "cobra 명령 진입점과 실행 로직"
+    output: "진단 출력 포맷 (text / json)"
+
+optional:
+  topic:
+    diagnostics: "파일:라인 [룰ID] 메시지 진단 형식"

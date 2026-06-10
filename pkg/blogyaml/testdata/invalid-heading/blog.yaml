@@ -1,0 +1,12 @@
+# 오류 예제: heading-default-lang — 기본 언어(ko)가 headings.related에 없음
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, en]
+sections: [tech]
+structure:
+  order: [body, related, sources]
+  headings:
+    related: { en: "Related", ja: "関連記事" }
+    sources: { ko: "출처", en: "Sources" }

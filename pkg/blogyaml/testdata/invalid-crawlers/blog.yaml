@@ -1,0 +1,15 @@
+# 오류 예제: crawlers-policy — "maybe"는 allow|block enum이 아님
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, en]
+sections: [tech]
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }
+geo:
+  crawlers:
+    training: maybe
+    search: allow

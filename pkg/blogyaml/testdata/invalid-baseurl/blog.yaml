@@ -1,0 +1,11 @@
+# 오류 예제: baseurl-format — 스킴 없는 baseURL
+site:
+  baseURL: parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, en]
+sections: [tech]
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }
