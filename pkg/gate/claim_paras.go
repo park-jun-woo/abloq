@@ -1,14 +1,19 @@
 //ff:func feature=gate type=parser control=iteration dimension=1 topic=evidence
-//ff:what 본문을 주장 검출 대상 문단으로 분할 — 코드 펜스/들여쓴 코드/인용/헤딩/이미지/구조 라인 제외, 빈 줄로 구분
+//ff:what 본문을 주장 검출 대상 문단으로 분할 — 코드 펜스/들여쓴 코드/인용/헤딩/이미지/구조 라인과 인식된 sources 섹션 내부 제외, 빈 줄로 구분
 package gate
 
 import "strings"
 
 // claimParas splits the body into claim-eligible paragraphs. Fenced and
-// indented code, blockquotes, headings, image lines and the structural lines
-// (main image, attribution, section headings) never carry gateable claims.
+// indented code, blockquotes, headings, image lines, the structural lines
+// (main image, attribution, section headings) and the recognized sources
+// section — whose list entries are citations, not claims — never carry
+// gateable claims.
 func claimParas(d *Doc) []claimPara {
 	skip := structuralLines(d)
+	for i := range sourcesLines(d) {
+		skip[i] = true
+	}
 	var paras []claimPara
 	var cur claimPara
 	flush := func() {

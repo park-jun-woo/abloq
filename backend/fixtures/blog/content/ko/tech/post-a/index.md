@@ -8,6 +8,9 @@ tags: [geo, abloq]
 
 본문 단락이다. [내부 링크](/tech/post-b/)와 [외부 링크](https://example.org/x) 하나씩.
 
+처리량이 이전 분기 대비 40% 증가했다.
+평균 응답 시간은 120ms 단축됐다.
+
 ## 출처
 
 - [출처 하나](https://example.org/source-1)

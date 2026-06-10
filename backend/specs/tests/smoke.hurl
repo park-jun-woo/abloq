@@ -97,6 +97,15 @@ HTTP 200
 [Asserts]
 jsonpath "$.items" count >= 2
 
+# ScanEvidence — post-a's unsourced claims enqueue 1 evidence item; post-b's
+# dead link needs 3 consecutive failed scans before rot confirms (needs the
+# archive stub on LINKCHECK_HOST_OVERRIDE: /dead-* paths answer 404)
+POST {{host}}/scans/evidence
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.detected" >= 1
+
 # ExportQueue — pushes open items to the bare repo (QUEUE_EXPORT_*);
 # a no-op when everything is already exported
 POST {{host}}/queue/export

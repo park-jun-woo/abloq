@@ -51,6 +51,13 @@ allow if {
     input.claims.role == "operator"
 }
 
+# Operator-only: detect unsourced claims/link rot and enqueue evidence candidates
+allow if {
+    input.action == "ScanEvidence"
+    input.resource == "queue_item"
+    input.claims.role == "operator"
+}
+
 # Operator-only: export open queue items to the blog repository
 allow if {
     input.action == "ExportQueue"

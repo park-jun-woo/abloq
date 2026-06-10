@@ -11,6 +11,7 @@ tables:
   citation_samples:
     belongs_to:
       - citation_queries
+  citation_checks: {}
 
 features:
   - op: Login
@@ -52,6 +53,11 @@ features:
   - op: ScanFreshness
     path: POST /scans/freshness
     desc: Detect articles whose lastmod exceeded geo.freshness_days and enqueue refresh candidates (idempotent — open/exported duplicates are skipped)
+    table: queue_items
+
+  - op: ScanEvidence
+    path: POST /scans/evidence
+    desc: Detect unsourced numeric claims and confirmed link rot (3 consecutive failed scans) and enqueue evidence candidates (idempotent)
     table: queue_items
 
   - op: ExportQueue

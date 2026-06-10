@@ -10,6 +10,11 @@ Serves the four endpoints pkg/archive talks to, on one port:
   POST /token                       OAuth2 jwt-bearer token exchange (GSC)
   POST /v3/urlNotifications:publish GSC Indexing API publish
 
+GET/HEAD on any path answers the link-rot checker (Phase010): paths
+containing "dead" are 404, everything else 200. Point the checker at it
+with LINKCHECK_HOST_OVERRIDE=http://127.0.0.1:<port> so the fixture
+citation URLs converge on the stub (no real network).
+
 Point abloqd at it with:
   WAYBACK_BASE_URL=http://127.0.0.1:<port>
   INDEXNOW_ENDPOINT=http://127.0.0.1:<port>/indexnow
@@ -35,6 +40,16 @@ class StubHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
+
+    def _rot_code(self):
+        return 404 if "dead" in self.path else 200
+
+    def do_GET(self):
+        self._reply(self._rot_code(), {"path": self.path})
+
+    def do_HEAD(self):
+        self.send_response(self._rot_code())
+        self.end_headers()
 
     def do_POST(self):
         length = int(self.headers.get("Content-Length", 0))
