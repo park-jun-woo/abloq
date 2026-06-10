@@ -1,0 +1,17 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/visibility"
+
+// Citation sampling round (weekly cron). The active query set rides in as a
+// JSON scalar (id order = budget-cut order); the func runs every API-key
+// engine over the first geo.citation_budget queries (blog.yaml — 0 disables
+// sampling, the opt-in default) and returns the batch payload. Samples are
+// trend records only: they feed no gate and no verdict (§6.3
+// non-determinism quarantine); run_at is DB NOW().
+
+// @auth "SampleCitations" "citation_sample" {} "Forbidden" 403
+// @get string queriesJson = CitationQuery.AggActiveJson()
+// @call SampleCitationsResponse res = visibility.SampleCitations({QueriesJSON: queriesJson})
+// @put CitationSample.InsertFromJson({SamplesJson: res.SamplesJSON})
+// @response { engines: res.Engines, sampled: res.Sampled }
+func SampleCitations() {}

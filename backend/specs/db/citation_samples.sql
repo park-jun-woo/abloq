@@ -5,6 +5,7 @@ CREATE TABLE citation_samples (
     engine VARCHAR(40) NOT NULL,
     cited BOOLEAN NOT NULL DEFAULT FALSE,
     evidence TEXT NOT NULL DEFAULT '',
+    extractor_version VARCHAR(40) NOT NULL DEFAULT '', -- @backfill default=''
     run_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

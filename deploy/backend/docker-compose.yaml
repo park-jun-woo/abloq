@@ -34,6 +34,7 @@ services:
       # 최초 기동 시 스키마 적용 (이후 마이그레이션은 운영 절차로)
       - ../../backend/arts/db/migrations/0001_initial.up.sql:/docker-entrypoint-initdb.d/0001_initial.up.sql:ro
       - ../../backend/arts/db/migrations/0002_create_ingest_cursors_and_more.up.sql:/docker-entrypoint-initdb.d/0002_create_ingest_cursors_and_more.up.sql:ro
+      - ../../backend/arts/db/migrations/0003_add_citation_samples_extractor_version.up.sql:/docker-entrypoint-initdb.d/0003_add_citation_samples_extractor_version.up.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abloqd} -d ${POSTGRES_DB:-abloqd}"]
       interval: 5s
@@ -82,6 +83,22 @@ services:
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
       AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
       AWS_REGION: ${AWS_REGION:-}
+      # GSC 폴링 (Phase013) — Search Analytics → gsc_snapshots. SA 자격은
+      # 아카이버와 공유(GSC_SA_JSON_PATH), scope만 다르다(webmasters.readonly).
+      # GSC_SEARCH_API_BASE·GSC_TOKEN_URL 기본값이 실서비스 — 스텁에서만
+      # 오버라이드. GSC_SITE_URL이 비면 blog.yaml baseURL(URL-prefix 속성).
+      GSC_SITE_URL: ${GSC_SITE_URL:-}
+      GSC_DELAY_MARGIN_DAYS: ${GSC_DELAY_MARGIN_DAYS:-2}
+      GSC_LOOKBACK_DAYS: ${GSC_LOOKBACK_DAYS:-28}
+      GSC_INSPECT_RECENT_DAYS: ${GSC_INSPECT_RECENT_DAYS:-7}
+      GSC_INSPECT_MAX: ${GSC_INSPECT_MAX:-10}
+      # 인용 샘플링 (Phase013) — 키가 있는 엔진만 돈다(옵트인), 비용 상한은
+      # blog.yaml geo.citation_budget(기본 0 = 비활성). 키는 전부 백엔드에만
+      # (설계서 §3.3) — 에이전트·영수증에 절대 없다.
+      PERPLEXITY_API_KEY: ${PERPLEXITY_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      CITATION_INTERVAL_MS: ${CITATION_INTERVAL_MS:-1000}
       # deploy key + known_hosts — git push가 ssh로 나갈 때만 쓰인다
       # (file:// 테스트 origin은 ssh를 타지 않는다).
       GIT_SSH_COMMAND: >-
@@ -172,6 +189,60 @@ services:
           curl -sf -m 600 -X POST http://abloqd:8080/ingest/crawl \
             -H "Authorization: Bearer $$TOKEN" >/dev/null \
             || echo "crawl: ingest failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # GSC 수집 cron (Phase013, 권고 일간) — Search Analytics → gsc_snapshots.
+  # 멱등 — 커서(MAX(snap_date))가 닫힌 일자만 전진하므로 재실행해도 이중
+  # 적재가 없다. inspect는 항상 false(쿼터 보호) — URL Inspection은 운영자가
+  # 필요할 때 수동 호출한다. 켜기: docker compose --profile gsc up -d
+  gsc-ingest:
+    image: alpine:3.21
+    profiles: ["gsc"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the gsc ingest cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the gsc ingest cron}
+      GSC_PERIOD_SECONDS: ${GSC_PERIOD_SECONDS:-86400}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$GSC_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login             -H 'Content-Type: application/json'             -d "{"email":"$$ABLOQD_OPERATOR_EMAIL","password":"$$ABLOQD_OPERATOR_PASSWORD"}"             | jq -r .access_token) || { echo "gsc: login failed"; continue; }
+          # ② ingest — 닫힌 일자 증분 수집 (멱등, inspect 항상 off)
+          curl -sf -m 600 -X POST http://abloqd:8080/ingest/gsc             -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json'             -d '{"inspect":false}' >/dev/null             || echo "gsc: ingest failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 인용 샘플링 cron (Phase013, 권고 주간) — active 질의 셋 1회전 실행.
+  # blog.yaml geo.citation_budget=0(기본)이면 no-op이므로 켜 두어도 비용이
+  # 없다. 샘플은 추세 기록 전용 — 어떤 게이트·판정에도 입력되지 않는다(§6.3).
+  # 켜기: docker compose --profile citation up -d
+  citation-sample:
+    image: alpine:3.21
+    profiles: ["citation"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the citation sample cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the citation sample cron}
+      CITATION_PERIOD_SECONDS: ${CITATION_PERIOD_SECONDS:-604800}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$CITATION_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login             -H 'Content-Type: application/json'             -d "{"email":"$$ABLOQD_OPERATOR_EMAIL","password":"$$ABLOQD_OPERATOR_PASSWORD"}"             | jq -r .access_token) || { echo "citation: login failed"; continue; }
+          # ② sample — budget 상한 1회전 (budget 0이면 no-op)
+          curl -sf -m 600 -X POST http://abloqd:8080/sample/citations             -H "Authorization: Bearer $$TOKEN" >/dev/null             || echo "citation: sample failed (next cycle retries)"
         done
     restart: unless-stopped
 

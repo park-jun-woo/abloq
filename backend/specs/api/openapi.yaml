@@ -68,6 +68,26 @@ components:
         hits: { type: integer, format: int64 }
         md_hits: { type: integer, format: int64 }
         created_at: { type: string, format: date-time }
+    CitationQuery:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        lang: { type: string }
+        section: { type: string }
+        slug: { type: string }
+        query_text: { type: string }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+    CitationSample:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        citation_queries_id: { type: integer, format: int64 }
+        engine: { type: string }
+        cited: { type: boolean }
+        evidence: { type: string }
+        extractor_version: { type: string }
+        run_at: { type: string, format: date-time }
 paths:
   /auth/login:
     post:
@@ -469,6 +489,208 @@ paths:
                   hits:
                     type: array
                     items: { $ref: '#/components/schemas/CrawlHit' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /ingest/gsc:
+    post:
+      operationId: IngestGSC
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [inspect]
+              properties:
+                inspect: { type: boolean, description: "opt into the URL Inspection summary (quota guard — keep false in cron wiring)" }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  days: { type: integer, format: int64 }
+                  rows: { type: integer, format: int64 }
+                  inspected: { type: integer, format: int64 }
+                  inspections: { type: string, description: "URL Inspection verdict summaries as a JSON array string ('[]' when inspect=false)" }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /citation-queries:
+    post:
+      operationId: CreateCitationQuery
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [lang, section, slug, query_text]
+              properties:
+                lang: { type: string, minLength: 1, maxLength: 35 }
+                section: { type: string, minLength: 1 }
+                slug: { type: string, minLength: 1 }
+                query_text: { type: string, minLength: 1 }
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+                  lang: { type: string }
+                  section: { type: string }
+                  slug: { type: string }
+                  query_text: { type: string }
+                  active: { type: boolean }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+    get:
+      operationId: ListCitationQueries
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: query
+          required: false
+          schema: { type: string }
+        - name: active_filter
+          in: query
+          required: false
+          schema: { type: string, enum: ["", "true", "false"] }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  queries:
+                    type: array
+                    items: { $ref: '#/components/schemas/CitationQuery' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /citation-queries/{id}:
+    delete:
+      operationId: DeleteCitationQuery
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer, format: int64 }
+      responses:
+        '200':
+          description: Deactivated (soft delete — samples keep their FK history)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id: { type: integer, format: int64 }
+                  active: { type: boolean }
+        '404':
+          description: Not found
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /sample/citations:
+    post:
+      operationId: SampleCitations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  engines: { type: integer, format: int64 }
+                  sampled: { type: integer, format: int64 }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /citations:
+    get:
+      operationId: ListCitations
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: slug
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  samples:
+                    type: array
+                    items: { $ref: '#/components/schemas/CitationSample' }
         '403':
           description: Forbidden
           content:

@@ -1,0 +1,11 @@
+package service
+
+// Operational query-set lookup. Empty-string filters mean "no filter";
+// active rides as text ('', 'true', 'false') so one endpoint serves all
+// three states.
+
+// @no-pagination
+// @auth "ListCitationQueries" "citation_query" {} "Forbidden" 403
+// @get []CitationQuery queries = CitationQuery.ListFiltered({Slug: request.slug, ActiveFilter: request.active_filter})
+// @response { queries: queries }
+func ListCitationQueries() {}

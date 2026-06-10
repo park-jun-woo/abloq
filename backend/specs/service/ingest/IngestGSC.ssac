@@ -1,0 +1,21 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/visibility"
+
+// GSC ingest — Search Analytics rows to gsc_snapshots (daily cron). The
+// cursor derives from the snapshots themselves: MAX(snap_date) rides in as
+// a text scalar (the func never reads the DB — IngestCrawl precedent), and
+// the func collects only the closed days after it, up to today (UTC) minus
+// the GSC delay margin (GSC_DELAY_MARGIN_DAYS, default 2 — GSC data
+// finalizes late). First collection ('' cursor) covers GSC_LOOKBACK_DAYS
+// (default 28). Re-running cannot double-ingest: the cursor only moves
+// forward over closed days, so the second POST reports rows == 0.
+// request.inspect opts into the URL Inspection summary (quota guard —
+// default off in every cron wiring).
+
+// @auth "IngestGSC" "gsc_snapshot" {} "Forbidden" 403
+// @get string cursor = GscSnapshot.MaxDateText()
+// @call IngestGscResponse res = visibility.IngestGsc({Cursor: cursor, Inspect: request.inspect})
+// @put GscSnapshot.UpsertFromJson({RowsJson: res.RowsJSON})
+// @response { days: res.Days, rows: res.Rows, inspected: res.Inspected, inspections: res.InspectionsJSON }
+func IngestGSC() {}

@@ -90,3 +90,44 @@ HTTP 403
 GET {{host}}/crawl-hits
 Authorization: Bearer {{viewer_token}}
 HTTP 403
+
+# IngestGSC is forbidden for non-operators
+POST {{host}}/ingest/gsc
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "inspect": false
+}
+HTTP 403
+
+# CreateCitationQuery is forbidden for non-operators
+POST {{host}}/citation-queries
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "lang": "ko",
+  "section": "tech",
+  "slug": "post-a",
+  "query_text": "forbidden probe"
+}
+HTTP 403
+
+# ListCitationQueries is forbidden for non-operators
+GET {{host}}/citation-queries
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# DeleteCitationQuery is forbidden for non-operators
+DELETE {{host}}/citation-queries/1
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# SampleCitations is forbidden for non-operators
+POST {{host}}/sample/citations
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# ListCitations is forbidden for non-operators
+GET {{host}}/citations
+Authorization: Bearer {{viewer_token}}
+HTTP 403

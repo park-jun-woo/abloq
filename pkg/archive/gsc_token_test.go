@@ -1,5 +1,5 @@
 //ff:func feature=archive type=client control=sequence
-//ff:what gscToken이 jwt-bearer grant로 access_token을 받아오고 비2xx·빈 토큰·자격 누락이면 에러인지 검증
+//ff:what GSCToken이 jwt-bearer grant로 scope별 access_token을 받아오고 비2xx·빈 토큰·자격 누락이면 에러인지 검증
 package archive
 
 import (
@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestGscToken(t *testing.T) {
+func TestGSCToken(t *testing.T) {
 	fail := false
 	empty := false
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -41,22 +41,34 @@ func TestGscToken(t *testing.T) {
 	t.Setenv("GSC_SA_JSON", saJSONFixture(t))
 	t.Setenv("GSC_SA_JSON_PATH", "")
 
-	token, err := gscToken()
+	token, err := GSCToken(ScopeIndexing)
 	if err != nil || token != "stub-token" {
-		t.Errorf("gscToken = %q, %v, want stub-token", token, err)
+		t.Errorf("GSCToken = %q, %v, want stub-token", token, err)
 	}
 
 	fail = true
-	if _, err := gscToken(); err == nil {
+	if _, err := GSCToken(ScopeIndexing); err == nil {
 		t.Error("non-2xx token endpoint must fail")
 	}
 	fail, empty = false, true
-	if _, err := gscToken(); err == nil {
+	if _, err := GSCToken(ScopeIndexing); err == nil {
 		t.Error("empty access_token must fail")
 	}
 
+	fail, empty = false, false
+	t.Setenv("GSC_SA_JSON", `{"client_email":"x@test","private_key":"not-pem"}`)
+	if _, err := GSCToken(ScopeIndexing); err == nil {
+		t.Error("unparsable private key must fail")
+	}
+
+	t.Setenv("GSC_SA_JSON", saJSONFixture(t))
+	t.Setenv("GSC_TOKEN_URL", "http://127.0.0.1:1")
+	if _, err := GSCToken(ScopeIndexing); err == nil {
+		t.Error("transport failure must fail")
+	}
+
 	t.Setenv("GSC_SA_JSON", "")
-	if _, err := gscToken(); err == nil {
+	if _, err := GSCToken(ScopeIndexing); err == nil {
 		t.Error("missing credentials must fail")
 	}
 }

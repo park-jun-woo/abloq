@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Mock external archive APIs for the Hurl scenarios (Phase008).
 
-Serves the four endpoints pkg/archive talks to, on one port:
+Serves the external endpoints pkg/archive and pkg/visibility talk to, on
+one port:
 
   POST /save                        Wayback SPN2  (5xx when the url form
                                     field contains "boom" — partial-failure
@@ -9,6 +10,15 @@ Serves the four endpoints pkg/archive talks to, on one port:
   POST /indexnow                    IndexNow batch submission
   POST /token                       OAuth2 jwt-bearer token exchange (GSC)
   POST /v3/urlNotifications:publish GSC Indexing API publish
+  POST .../searchAnalytics/query    GSC Search Analytics: two fixture pages
+                                    per requested day (Phase013)
+  POST /v1/urlInspection/index:inspect  GSC URL Inspection: PASS verdict
+  POST /chat/completions            Perplexity engine — citations array
+  POST /v1/responses                OpenAI engine — url_citation annotation
+  POST /v1/messages                 Anthropic engine — text block citations
+
+Every engine answer cites https://fixture.example.com/... so the sampling
+scenario records cited=true rows against the shared fixture blog.
 
 GET/HEAD on any path answers the link-rot checker (Phase010): paths
 containing "dead" are 404, everything else 200. Point the checker at it
@@ -20,6 +30,10 @@ Point abloqd at it with:
   INDEXNOW_ENDPOINT=http://127.0.0.1:<port>/indexnow
   GSC_API_BASE=http://127.0.0.1:<port>
   GSC_TOKEN_URL=http://127.0.0.1:<port>/token
+  GSC_SEARCH_API_BASE=http://127.0.0.1:<port>
+  PERPLEXITY_BASE_URL=http://127.0.0.1:<port>
+  OPENAI_BASE_URL=http://127.0.0.1:<port>
+  ANTHROPIC_BASE_URL=http://127.0.0.1:<port>
 
 Usage: archive_stub.py [port]   (default 8099)
 """
@@ -71,6 +85,36 @@ class StubHandler(BaseHTTPRequestHandler):
             except ValueError:
                 url = ""
             self._reply(200, {"urlNotificationMetadata": {"url": url}})
+        elif "/searchAnalytics/query" in self.path:
+            self._reply(200, {"rows": [
+                {"keys": ["https://fixture.example.com/tech/post-a/"],
+                 "clicks": 3, "impressions": 120, "ctr": 0.025, "position": 4.2},
+                {"keys": ["https://fixture.example.com/tech/post-b/"],
+                 "clicks": 1, "impressions": 40, "ctr": 0.025, "position": 9.8},
+            ]})
+        elif self.path.endswith("/urlInspection/index:inspect"):
+            self._reply(200, {"inspectionResult": {"indexStatusResult": {
+                "verdict": "PASS", "coverageState": "Submitted and indexed"}}})
+        elif self.path == "/chat/completions":
+            self._reply(200, {
+                "citations": ["https://fixture.example.com/tech/post-a/",
+                              "https://other.example.org/x"],
+                "choices": [{"message": {"content": "stub answer"}}]})
+        elif self.path == "/v1/responses":
+            self._reply(200, {"output": [
+                {"type": "web_search_call"},
+                {"type": "message", "content": [{
+                    "type": "output_text", "text": "stub answer",
+                    "annotations": [{"type": "url_citation",
+                                     "url": "https://fixture.example.com/tech/post-b/"}]}]},
+            ]})
+        elif self.path == "/v1/messages":
+            self._reply(200, {"content": [
+                {"type": "server_tool_use"},
+                {"type": "text", "text": "stub answer",
+                 "citations": [{"type": "web_search_result_location",
+                                "url": "https://fixture.example.com/tech/post-a/"}]},
+            ]})
         else:
             self._reply(404, {"error": "stub: unknown path " + self.path})
 

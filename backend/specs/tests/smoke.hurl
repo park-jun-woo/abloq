@@ -141,3 +141,63 @@ Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.hits" count >= 0
+
+# IngestGSC — re-run after the gsc-citation scenario already advanced the
+# MAX(snap_date) cursor: a no-op on the shared DB, a full lookback on a
+# fresh one (the exact-count oracle lives in scenario-gsc-citation.hurl)
+POST {{host}}/ingest/gsc
+Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "inspect": false
+}
+HTTP 200
+[Asserts]
+jsonpath "$.days" >= 0
+jsonpath "$.rows" >= 0
+
+# CreateCitationQuery — register a smoke query (soft-deleted right below)
+POST {{host}}/citation-queries
+Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "lang": "ko",
+  "section": "tech",
+  "slug": "post-a",
+  "query_text": "smoke probe query"
+}
+HTTP 201
+[Captures]
+smoke_qid: jsonpath "$.id"
+[Asserts]
+jsonpath "$.active" == true
+
+# ListCitationQueries — at least the smoke query is listed
+GET {{host}}/citation-queries
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.queries" count >= 1
+
+# SampleCitations — engine keys and budget come from the runtime env; on
+# the stub wiring this records rows, elsewhere it may be a clean no-op
+POST {{host}}/sample/citations
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.engines" >= 0
+jsonpath "$.sampled" >= 0
+
+# ListCitations — the recorded time series is readable
+GET {{host}}/citations
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.samples" count >= 0
+
+# DeleteCitationQuery — soft delete the smoke query (history preserved)
+DELETE {{host}}/citation-queries/{{smoke_qid}}
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.active" == false

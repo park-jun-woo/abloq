@@ -20,7 +20,7 @@ func processGSC(pending []Pending) []Item {
 	}
 	deferred := fanoutItems(tail, endpoint,
 		json.RawMessage(`{"reason":"gsc daily quota split — deferred to a later run"}`), StatusDeferred)
-	token, err := gscToken()
+	token, err := GSCToken(ScopeIndexing)
 	if err != nil {
 		return append(fanoutItems(head, endpoint, wrapResponse(0, []byte(err.Error())), StatusFailed), deferred...)
 	}

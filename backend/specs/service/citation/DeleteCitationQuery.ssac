@@ -1,0 +1,13 @@
+package service
+
+// Soft delete only: citation_samples references the query by FK, so a hard
+// DELETE would destroy the recorded time series. active=false drops the
+// query from future sampling rounds while the history stays queryable.
+
+// @auth "DeleteCitationQuery" "citation_query" {ResourceID: request.id} "Forbidden" 403
+// @get CitationQuery q = CitationQuery.FindByID({ID: request.id})
+// @empty q "Citation query not found"
+// @put CitationQuery.SoftDelete({ID: request.id})
+// @get CitationQuery updated = CitationQuery.FindByID({ID: request.id})
+// @response { id: updated.ID, active: updated.Active }
+func DeleteCitationQuery() {}

@@ -1,0 +1,10 @@
+package service
+
+// Register one standard sampling query. Query authoring is agent-assisted
+// (a one-shot quest derives N queries from the article topic), but storage
+// and execution are pure code — the agent only proposes text.
+
+// @auth "CreateCitationQuery" "citation_query" {} "Forbidden" 403
+// @post CitationQuery q = CitationQuery.Create({Lang: request.lang, Section: request.section, Slug: request.slug, QueryText: request.query_text})
+// @response { id: q.ID, lang: q.Lang, section: q.Section, slug: q.Slug, query_text: q.QueryText, active: q.Active }
+func CreateCitationQuery() {}

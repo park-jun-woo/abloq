@@ -17,6 +17,10 @@ geo:
   # 1-day threshold so the fixture posts (lastmod 2026-06-0x) read as stale —
   # the freshness scanner scenario needs detectable candidates.
   freshness_days: 1
+  # 2 queries per engine per round — the gsc-citation scenario records
+  # samples (the budget=0 no-op oracle lives on the cluster instance, whose
+  # blog.yaml leaves citation_budget at the 0 default).
+  citation_budget: 2
   crawlers:
     training: allow
     search: allow

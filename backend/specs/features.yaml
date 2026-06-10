@@ -86,3 +86,33 @@ features:
     path: GET /crawl-hits
     desc: List aggregated crawl hits filtered by lang, section, slug and hit_date range
     table: crawl_hits
+
+  - op: IngestGSC
+    path: POST /ingest/gsc
+    desc: Collect daily Search Analytics rows (impressions, clicks, avg position) for closed days past the MAX(snap_date) cursor; optional URL Inspection summary
+    table: gsc_snapshots
+
+  - op: CreateCitationQuery
+    path: POST /citation-queries
+    desc: Register one standard citation-sampling query for an article
+    table: citation_queries
+
+  - op: ListCitationQueries
+    path: GET /citation-queries
+    desc: List citation-sampling queries filtered by slug and active
+    table: citation_queries
+
+  - op: DeleteCitationQuery
+    path: DELETE /citation-queries/{id}
+    desc: Deactivate a citation-sampling query (soft delete — samples keep their FK history)
+    table: citation_queries
+
+  - op: SampleCitations
+    path: POST /sample/citations
+    desc: Run one citation-sampling round over the active queries (citation_budget per engine, 0 = disabled) and record the samples
+    table: citation_samples
+
+  - op: ListCitations
+    path: GET /citations
+    desc: List recorded citation samples joined with their queries, filtered by slug (trend readout only — feeds no gate)
+    table: citation_samples

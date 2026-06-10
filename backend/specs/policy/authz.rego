@@ -92,3 +92,45 @@ allow if {
     input.resource == "crawl_hit"
     input.claims.role == "operator"
 }
+
+# Operator-only: collect Search Analytics rows into gsc_snapshots (daily cron)
+allow if {
+    input.action == "IngestGSC"
+    input.resource == "gsc_snapshot"
+    input.claims.role == "operator"
+}
+
+# Operator-only: register a citation-sampling query
+allow if {
+    input.action == "CreateCitationQuery"
+    input.resource == "citation_query"
+    input.claims.role == "operator"
+}
+
+# Operator-only: list citation-sampling queries
+allow if {
+    input.action == "ListCitationQueries"
+    input.resource == "citation_query"
+    input.claims.role == "operator"
+}
+
+# Operator-only: deactivate a citation-sampling query (soft delete)
+allow if {
+    input.action == "DeleteCitationQuery"
+    input.resource == "citation_query"
+    input.claims.role == "operator"
+}
+
+# Operator-only: run one citation-sampling round (weekly cron)
+allow if {
+    input.action == "SampleCitations"
+    input.resource == "citation_sample"
+    input.claims.role == "operator"
+}
+
+# Operator-only: read the citation sample time series
+allow if {
+    input.action == "ListCitations"
+    input.resource == "citation_sample"
+    input.claims.role == "operator"
+}

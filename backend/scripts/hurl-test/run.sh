@@ -8,9 +8,13 @@
 # shared-fixture instance and the cluster-fixture instance run one after the
 # other), runs every Hurl file in the shared-DB order (scenario-freshness
 # first: its cold-start priority assert needs empty crawl_hits AND empty
-# queue_items; scenario-crawl after it for the same reason; smoke last), and
-# tears everything down. Login is rate-limited 5/min/IP, so the run sleeps
-# 61s between the two 4-login batches.
+# queue_items; scenario-crawl after it for the same reason;
+# scenario-gsc-citation before smoke — smoke re-runs its ops loosely;
+# smoke last), and tears everything down. Login is rate-limited 5/min/IP,
+# so the run sleeps 61s between the login batches (4+3+2 logins). The
+# cluster instance additionally runs scenario-citation-budget0: the
+# cluster-blog fixture leaves citation_budget at 0, the budget no-op
+# oracle the shared fixture (citation_budget: 2) cannot express.
 #
 # Usage: backend/scripts/hurl-test/run.sh
 # Requires: backend/arts generated (yongol generate backend/specs backend/arts)
@@ -101,6 +105,13 @@ start_abloqd() { # $1=db $2=blog-repo $3=bare $4=export-workdir $5=logfile
     GSC_TOKEN_URL="http://127.0.0.1:$PORT_STUB/token" \
     GSC_SA_JSON_PATH="$WORK/sa.json" \
     LINKCHECK_HOST_OVERRIDE="http://127.0.0.1:$PORT_STUB" \
+    GSC_SEARCH_API_BASE="http://127.0.0.1:$PORT_STUB" \
+    GSC_LOOKBACK_DAYS=3 \
+    GSC_INSPECT_RECENT_DAYS=36500 \
+    PERPLEXITY_API_KEY="stub-key" PERPLEXITY_BASE_URL="http://127.0.0.1:$PORT_STUB" \
+    OPENAI_API_KEY="stub-key" OPENAI_BASE_URL="http://127.0.0.1:$PORT_STUB" \
+    ANTHROPIC_API_KEY="stub-key" ANTHROPIC_BASE_URL="http://127.0.0.1:$PORT_STUB" \
+    CITATION_INTERVAL_MS=0 \
     BLOG_REPO_PATH="$2" \
     QUEUE_EXPORT_REPO_URL="file://$3" QUEUE_EXPORT_WORKDIR="$4" \
     CF_LOG_SOURCE="$ROOT/backend/fixtures/cflogs" \
@@ -136,12 +147,20 @@ sleep 61
 hurl --test --variable "host=$HOST" \
   "$TESTS/scenario-auth-forbidden.hurl" \
   "$TESTS/scenario-crawl.hurl" \
+  "$TESTS/scenario-gsc-citation.hurl"
+echo "sleeping 61s (login rate limit window)..."
+sleep 61
+hurl --test --variable "host=$HOST" \
   "$TESTS/smoke.hurl"
 stop_abloqd
 
-# ⑤ dedicated cluster instance (own DB, own fixture, fresh limiter)
+# ⑤ dedicated cluster instance (own DB, own fixture, fresh limiter) —
+# cluster oracle + the citation budget=0 no-op oracle (citation_budget
+# defaults to 0 in the cluster-blog fixture).
 start_abloqd abloqd_cluster "$ROOT/backend/fixtures/cluster-blog" "$WORK/bare-b" "$WORK/export-b" abloqd-b.log
-hurl --test --variable "host=$HOST" "$TESTS/scenario-cluster.hurl"
+hurl --test --variable "host=$HOST" \
+  "$TESTS/scenario-cluster.hurl" \
+  "$TESTS/scenario-citation-budget0.hurl"
 stop_abloqd
 
 echo "hurl-test: PASS"

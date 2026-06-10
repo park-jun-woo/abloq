@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence topic=crawl
-//ff:what "abloq ingest" 부모 명령 생성 — 수집 서브커맨드(crawl) 등록
+//ff:what "abloq ingest" 부모 명령 생성 — 수집 서브커맨드(crawl·gsc) 등록
 package main
 
 import "github.com/spf13/cobra"
@@ -13,5 +13,6 @@ func newIngestCmd() *cobra.Command {
 		Short: "Visibility ingests: aggregate external signals without the backend",
 	}
 	cmd.AddCommand(newIngestCrawlCmd())
+	cmd.AddCommand(newIngestGSCCmd())
 	return cmd
 }
