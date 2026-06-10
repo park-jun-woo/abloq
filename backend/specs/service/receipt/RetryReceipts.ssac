@@ -1,0 +1,10 @@
+package service
+
+// Rearm failed/deferred receipts back to pending — the next
+// POST /archive/process executes them. Empty-string filters mean "all".
+
+// @auth "RetryReceipts" "receipt" {} "Forbidden" 403
+// @put Receipt.RearmFromFilter({DeployID: request.deploy_id, Kind: request.kind_filter})
+// @get int64 pending = Receipt.CountPending()
+// @response { pending: pending }
+func RetryReceipts() {}

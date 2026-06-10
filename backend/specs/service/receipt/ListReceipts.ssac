@@ -1,0 +1,11 @@
+package service
+
+// Gate-facing receipt lookup — quest gates verify "archive receipt exists"
+// here. Filters are by canonical URL (target), not slug: the receipts schema
+// has no slug; callers translate slug → URL via the pkg/content URL contract.
+
+// @no-pagination
+// @auth "ListReceipts" "receipt" {} "Forbidden" 403
+// @get []Receipt receipts = Receipt.ListFiltered({Target: request.target, Kind: request.kind, DeployID: request.deploy_id, Status: request.status})
+// @response { receipts: receipts }
+func ListReceipts() {}

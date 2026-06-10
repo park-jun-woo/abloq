@@ -21,3 +21,37 @@ HTTP 403
 GET {{host}}/posts
 Authorization: Bearer {{viewer_token}}
 HTTP 403
+
+# HookDeployed is forbidden for non-operators
+POST {{host}}/hooks/deployed
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "deploy_id": "forbidden-1",
+  "changed": ["https://fixture.example.com/tech/post-a/"]
+}
+HTTP 403
+
+# ProcessArchive is forbidden for non-operators
+POST {{host}}/archive/process
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "limit": 1
+}
+HTTP 403
+
+# RetryReceipts is forbidden for non-operators
+POST {{host}}/receipts/retry
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "deploy_id": "",
+  "kind_filter": ""
+}
+HTTP 403
+
+# ListReceipts is forbidden for non-operators
+GET {{host}}/receipts
+Authorization: Bearer {{viewer_token}}
+HTTP 403

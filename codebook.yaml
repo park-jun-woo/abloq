@@ -1,6 +1,7 @@
 # abloq codebook — filefunc 어휘 (Phase001~005 범위, 이후 Phase에서 증보)
 required:
   feature:
+    archive: "아카이버 — 배포 변경 URL의 영수증 계획과 Wayback/IndexNow/GSC 일괄 제출, CLI와 abloqd 백엔드가 공유 (Phase008)"
     blogyaml: "blog.yaml SSOT — 스키마, strict 파싱, 기본값 주입, 검증 룰"
     cli: "abloq CLI — cobra 명령과 진단 출력"
     gen: "blog.yaml 파생물 생성기 — hugo.toml/robots.txt/llms.txt/JSON-LD 멱등 렌더링과 드리프트 체크"
@@ -20,6 +21,7 @@ required:
     generator: "파생물 렌더러 — 같은 입력이면 바이트 동일 출력 (멱등)"
     dict: "정적 사전 데이터 제공과 조회"
     frame: "게이트 공통 프레임 — 타깃 조립, 룰 레지스트리, 실행기, 글 수집"
+    client: "외부 API 클라이언트 — env 베이스 URL 오버라이드, 응답을 영수증으로 환원"
 
 optional:
   topic:

@@ -1,14 +1,24 @@
-# abloqd 셀프호스트 한 장 — postgres + abloqd (Phase007 §작업 7)
+# abloqd 셀프호스트 한 장 — postgres + abloqd (+아카이버 cron 백스톱) (Phase007·008)
 #
 # 사용:
 #   1. yongol generate backend/specs backend/arts   # arts는 일회용 projection
-#   2. deploy/backend/.env 에 자격증명 작성 (POSTGRES_PASSWORD, JWT_SECRET, BLOG_REPO_PATH)
+#   2. deploy/backend/.env 에 자격증명 작성 (POSTGRES_PASSWORD, JWT_SECRET, BLOG_REPO_PATH,
+#      아카이버: INDEXNOW_KEY, GSC_SA_JSON_FILE, WAYBACK_ACCESS_KEY/WAYBACK_SECRET_KEY)
 #   3. docker compose -f deploy/backend/docker-compose.yaml up -d --build
+#      (+아카이버 cron 백스톱까지: --profile backstop, ABLOQD_OPERATOR_* 필요)
 #
 # blog.yaml ↔ manifest는 별개 SSOT(설계서 §10.3): abloqd는 마운트된 블로그
 # 저장소의 blog.yaml(BLOG_REPO_PATH/blog.yaml)을 읽어 언어·섹션·URL 계약과
 # geo 임계를 파라미터로 쓴다. blog.yaml은 이미지에 굽지 않고 저장소 마운트로
 # 따라 들어온다 — 저장소 경로·자격증명은 전부 env로만 주입한다.
+#
+# 아카이버(Phase008) 트리거 구조:
+#   - 배포 직후: CI가 login → POST /hooks/deployed → POST /archive/process를
+#     직접 호출한다 (template/files/deploy/archiver.md). 실행 시각 = 증거 가치.
+#   - cron 백스톱(archiver-backstop, 권고 15분): failed/deferred 청소 전용 —
+#     login → POST /receipts/retry → POST /archive/process 순서가 필수다.
+#     retry만 걸면 deferred가 영원히 실행되지 않고, process만 걸면
+#     failed/deferred가 pending으로 돌아오지 않는다.
 
 name: abloqd
 
@@ -44,10 +54,59 @@ services:
       BLOG_REPO_PATH: /blog
       LOG_LEVEL: ${LOG_LEVEL:-info}
       GIN_MODE: release
+      # 아카이버 자격증명 (Phase008) — 전부 백엔드에만 있고 에이전트에는 없다.
+      # 베이스 URL 4종(WAYBACK_BASE_URL, INDEXNOW_ENDPOINT, GSC_API_BASE,
+      # GSC_TOKEN_URL)은 기본값이 실서비스 — 테스트 스텁에서만 오버라이드.
+      INDEXNOW_KEY: ${INDEXNOW_KEY:-}
+      GSC_SA_JSON_PATH: /etc/abloqd/gsc-sa.json
+      GSC_DAILY_QUOTA: ${GSC_DAILY_QUOTA:-200}
+      WAYBACK_ACCESS_KEY: ${WAYBACK_ACCESS_KEY:-}
+      WAYBACK_SECRET_KEY: ${WAYBACK_SECRET_KEY:-}
     volumes:
       - ${BLOG_REPO_PATH:?BLOG_REPO_PATH is required (host path of the blog repository)}:/blog:ro
+      # GSC 서비스 계정 JSON (없으면 /dev/null — gsc_index 영수증이 failed로 남는다)
+      - ${GSC_SA_JSON_FILE:-/dev/null}:/etc/abloqd/gsc-sa.json:ro
     ports:
       - "${ABLOQD_PORT:-8080}:8080"
+    restart: unless-stopped
+
+  # 아카이버 cron 백스톱 — failed/deferred 영수증 청소 (권고 15분 주기).
+  # 시크릿은 operator 자격증명(토큰 아님): access token TTL 15분이라 토큰
+  # 보관은 곧 401이 된다. 매 주기 login으로 새 토큰을 발급받는다.
+  # 켜기: docker compose --profile backstop up -d
+  archiver-backstop:
+    image: alpine:3.21
+    profiles: ["backstop"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the archiver backstop}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the archiver backstop}
+      BACKSTOP_PERIOD_SECONDS: ${BACKSTOP_PERIOD_SECONDS:-900}
+      BACKSTOP_PROCESS_LIMIT: ${BACKSTOP_PROCESS_LIMIT:-200}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$BACKSTOP_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "backstop: login failed"; continue; }
+          # ② retry — failed/deferred → pending 재무장 (deferred 흡수에 필수)
+          curl -sf -X POST http://abloqd:8080/receipts/retry \
+            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+            -d '{"deploy_id":"","kind_filter":""}' >/dev/null \
+            || echo "backstop: retry failed"
+          # ③ process — pending 일괄 실행 (멱등, limit로 쿼터 보호)
+          curl -sf -m 600 -X POST http://abloqd:8080/archive/process \
+            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+            -d "{\"limit\":$$BACKSTOP_PROCESS_LIMIT}" >/dev/null \
+            || echo "backstop: process failed (next cycle retries)"
+        done
     restart: unless-stopped
 
 volumes:

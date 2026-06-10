@@ -28,3 +28,23 @@ features:
     path: GET /posts
     desc: List the indexed posts
     table: posts
+
+  - op: HookDeployed
+    path: POST /hooks/deployed
+    desc: Record pending archive receipts for the changed URLs of a deploy (idempotent per deploy_id)
+    table: receipts
+
+  - op: ProcessArchive
+    path: POST /archive/process
+    desc: Execute pending archive receipts against Wayback, IndexNow and the GSC Indexing API
+    table: receipts
+
+  - op: RetryReceipts
+    path: POST /receipts/retry
+    desc: Rearm failed and deferred archive receipts back to pending
+    table: receipts
+
+  - op: ListReceipts
+    path: GET /receipts
+    desc: List archive receipts filtered by target, kind, deploy_id and status
+    table: receipts

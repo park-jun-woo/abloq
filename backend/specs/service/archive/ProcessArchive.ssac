@@ -1,0 +1,17 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/archive"
+
+// Archive processor — collects pending receipts (posts joined for the GSC
+// new-vs-updated priority) and executes the external calls in one batch:
+// Wayback SPN2 + IndexNow + GSC Indexing API. Kind dispatch, per-target
+// failure isolation and the GSC quota split all live inside pkg/archive
+// (SSaC stays branch-free). limit caps the batch size (quota protection);
+// unselected rows stay pending for the next run.
+
+// @auth "ProcessArchive" "receipt" {} "Forbidden" 403
+// @get string receiptsJson = Receipt.AggPendingJson()
+// @call ProcessBatchResponse batch = archive.ProcessBatch({ReceiptsJSON: receiptsJson, Limit: request.limit})
+// @put Receipt.UpsertFromJson({ItemsJson: batch.ResultsJSON})
+// @response { processed: batch.Processed, done: batch.Done, failed: batch.Failed, deferred: batch.Deferred }
+func ProcessArchive() {}

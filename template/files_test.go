@@ -16,6 +16,7 @@ func TestFiles(t *testing.T) {
 		"layouts/partials/hooks/social.html",
 		"assets/css/main.css",
 		"assets/js/particles.js",
+		"deploy/archiver.md",
 		"deploy/terraform/main.tf",
 		"deploy/terraform/modules/site/main.tf",
 		"deploy/terraform/modules/waf/main.tf",

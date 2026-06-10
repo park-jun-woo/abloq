@@ -15,3 +15,31 @@ allow if {
     input.resource == "post"
     input.claims.role == "operator"
 }
+
+# Operator-only: deploy webhook records pending archive receipts
+allow if {
+    input.action == "HookDeployed"
+    input.resource == "receipt"
+    input.claims.role == "operator"
+}
+
+# Operator-only: execute pending archive receipts (external calls)
+allow if {
+    input.action == "ProcessArchive"
+    input.resource == "receipt"
+    input.claims.role == "operator"
+}
+
+# Operator-only: rearm failed/deferred receipts back to pending
+allow if {
+    input.action == "RetryReceipts"
+    input.resource == "receipt"
+    input.claims.role == "operator"
+}
+
+# Operator-only: list archive receipts (quest-gate lookup)
+allow if {
+    input.action == "ListReceipts"
+    input.resource == "receipt"
+    input.claims.role == "operator"
+}

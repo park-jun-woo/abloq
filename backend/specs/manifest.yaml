@@ -25,8 +25,16 @@ backend:
       rate: 5
       period: "1m"
       key: ip
-# queue/cache postgres backends arrive with their first users:
-# the archiver @publish (Phase008) and the queue consumers (Phase018).
+  http:
+    # Loopback reverse proxy (compose/CDN sidecar). Override per deployment
+    # with BACKEND_HTTP_TRUSTED_PROXIES so the IP-keyed Login rate limit
+    # sees the real client IP (C-11).
+    trusted_proxies:
+      - 127.0.0.1/32
+      - ::1/128
+# queue/cache postgres backends arrive with their first users — the queue
+# consumers (Phase018). The archiver (Phase008) uses the receipts table as
+# its queue (pending → done|failed|deferred), not @publish/@subscribe.
 # XSA-75/XSA-77 forbid declaring infra backends no SSaC sequence uses.
 frontend:
   enabled: false

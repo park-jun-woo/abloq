@@ -1,0 +1,15 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/archive"
+
+// Deploy webhook — records status=pending receipts for every (kind, target)
+// pair of the changed URLs and returns 202 immediately. No external call here:
+// POST /archive/process executes the pending queue. Idempotent per deploy_id —
+// PlanDeploy filters out pairs that already hold a receipt for this deploy.
+
+// @auth "HookDeployed" "receipt" {} "Forbidden" 403
+// @get string receiptsJson = Receipt.AggByDeployJson({DeployID: request.deploy_id})
+// @call PlanDeployResponse plan = archive.PlanDeploy({DeployID: request.deploy_id, Changed: request.changed, ReceiptsJSON: receiptsJson})
+// @put Receipt.UpsertFromJson({ItemsJson: plan.ItemsJSON})
+// @response { planned: plan.Planned }
+func HookDeployed() {}
