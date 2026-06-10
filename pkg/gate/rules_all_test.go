@@ -1,5 +1,5 @@
 //ff:func feature=gate type=frame control=iteration dimension=1
-//ff:what Rules 레지스트리가 11룰을 고정 순서·중복 없는 ID로 노출하는지 검증
+//ff:what Rules 레지스트리가 14룰을 고정 순서·중복 없는 ID로 노출하는지 검증
 package gate
 
 import "testing"
@@ -10,6 +10,7 @@ func TestRulesAll(t *testing.T) {
 		"image-first", "image-attribution", "section-order", "section-preserved",
 		"body-lossless", "front-matter-intact", "heading-canonical",
 		"front-matter-schema", "slug-consistency", "honest-lastmod", "hreflang-complete",
+		"min-sources", "numeric-claim-sourced", "citation-exists",
 	}
 	if len(rules) != len(want) {
 		t.Fatalf("want %d rules, got %d", len(want), len(rules))

@@ -13,7 +13,7 @@ import (
 func TestRunGateJSON(t *testing.T) {
 	dir := writeGateFixture(t, false)
 	var out bytes.Buffer
-	if err := runGate(&out, dir, "image-first", true); err == nil {
+	if err := runGate(&out, dir, "image-first", true, false); err == nil {
 		t.Fatal("want error for violations")
 	}
 	var diags []blogyaml.Diagnostic

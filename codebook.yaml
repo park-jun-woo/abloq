@@ -1,4 +1,4 @@
-# abloq codebook — filefunc 어휘 (Phase001~003 범위, 이후 Phase에서 증보)
+# abloq codebook — filefunc 어휘 (Phase001~004 범위, 이후 Phase에서 증보)
 required:
   feature:
     blogyaml: "blog.yaml SSOT — 스키마, strict 파싱, 기본값 주입, 검증 룰"
@@ -19,6 +19,7 @@ required:
 optional:
   topic:
     diagnostics: "파일:라인 [룰ID] 메시지 진단 형식"
+    evidence: "근거 게이트 — 출처 수, 무출처 수치 주장, 인용 URL 실재 검증 (Phase010 스캐너와 검출기 공유)"
     drift: "재생성 결과와 디스크 산출물의 바이트 비교 진단"
     baseline: "git HEAD 스냅샷을 원본으로 한 변경 전후 비교 (치즈 방어)"
     lossless: "본문 무손실 multiset 비교 — 번역·재배열 퀘스트의 치즈 방어"

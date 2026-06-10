@@ -6,7 +6,7 @@ import "testing"
 
 func TestRunGateJSONErr(t *testing.T) {
 	dir := writeGateFixture(t, true)
-	if err := runGate(errWriter{}, dir, "", true); err == nil {
+	if err := runGate(errWriter{}, dir, "", true, false); err == nil {
 		t.Error("want write error from JSON output, got nil")
 	}
 }

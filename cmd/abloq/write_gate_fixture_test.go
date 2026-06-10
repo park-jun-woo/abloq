@@ -18,12 +18,13 @@ func writeGateFixture(t *testing.T, canonical bool) string {
 	if err := os.WriteFile(filepath.Join(dir, "blog.yaml"), []byte(blogYAML), 0o644); err != nil {
 		t.Fatalf("write blog.yaml: %v", err)
 	}
-	body := "본문 텍스트.\n"
-	if canonical {
-		body = "![Hello](/i.webp)\n*Image: AI generated*\n\n본문 텍스트.\n"
-	}
-	post := "---\ntitle: Hello\ndate: 2026-01-02\nlastmod: 2026-01-03\ntags: [\"a\"]\n---\n\n" + body
+	heading := map[string]string{"ko": "출처", "en": "Sources"}
 	for _, lang := range []string{"ko", "en"} {
+		body := "본문 텍스트.\n"
+		if canonical {
+			body = "![Hello](/i.webp)\n*Image: AI generated*\n\n본문 텍스트.\n\n## " + heading[lang] + "\n\n- 출처 하나\n"
+		}
+		post := "---\ntitle: Hello\ndate: 2026-01-02\nlastmod: 2026-01-03\ntags: [\"a\"]\n---\n\n" + body
 		postDir := filepath.Join(dir, "content", lang, "tech")
 		if err := os.MkdirAll(postDir, 0o755); err != nil {
 			t.Fatalf("MkdirAll: %v", err)

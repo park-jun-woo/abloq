@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence topic=diagnostics
-//ff:what gate 실행 본체 — blog.yaml 로드, 대상 글 수집, 룰 실행(전체 또는 --rule 1개), 진단 출력과 에러 반환
+//ff:what gate 실행 본체 — blog.yaml 로드, 대상 글 수집, 룰 실행(전체 또는 --rule 1개, --offline은 네트워크 룰 스킵), 진단 출력과 에러 반환
 package main
 
 import (
@@ -9,8 +9,9 @@ import (
 	"github.com/park-jun-woo/abloq/pkg/gate"
 )
 
-// runGate runs the structure gate rules against the blog rooted at dir.
-func runGate(out io.Writer, dir, ruleID string, jsonOut bool) error {
+// runGate runs the gate rules against the blog rooted at dir. offline skips
+// the network-dependent rules (citation-exists).
+func runGate(out io.Writer, dir, ruleID string, jsonOut, offline bool) error {
 	b, err := loadValidBlog(out, dir)
 	if err != nil {
 		return err
@@ -20,7 +21,9 @@ func runGate(out io.Writer, dir, ruleID string, jsonOut bool) error {
 		ruleIDs = append(ruleIDs, ruleID)
 	}
 	arts := gate.Discover(dir, b)
-	diags := gate.Run(gate.NewTarget(dir, b, arts), ruleIDs...)
+	tgt := gate.NewTarget(dir, b, arts)
+	tgt.Offline = offline
+	diags := gate.Run(tgt, ruleIDs...)
 	if jsonOut {
 		if err := printDiagsJSON(out, diags); err != nil {
 			return err

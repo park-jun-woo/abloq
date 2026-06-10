@@ -11,7 +11,7 @@ import (
 func TestRunGate(t *testing.T) {
 	dir := writeGateFixture(t, true)
 	var out bytes.Buffer
-	if err := runGate(&out, dir, "", false); err != nil {
+	if err := runGate(&out, dir, "", false, false); err != nil {
 		t.Fatalf("runGate on canonical fixture: %v\noutput: %s", err, out.String())
 	}
 	if !strings.Contains(out.String(), "pass the gate") {
@@ -19,11 +19,11 @@ func TestRunGate(t *testing.T) {
 	}
 	bad := writeGateFixture(t, false)
 	out.Reset()
-	if err := runGate(&out, bad, "section-order", false); err != nil {
+	if err := runGate(&out, bad, "section-order", false, false); err != nil {
 		t.Fatalf("rule filter: section-order must pass on image-less fixture, got %v", err)
 	}
 	out.Reset()
-	if err := runGate(&out, bad, "image-first", false); err == nil {
+	if err := runGate(&out, bad, "image-first", false, false); err == nil {
 		t.Fatalf("rule filter: image-first must fail, output: %s", out.String())
 	}
 }

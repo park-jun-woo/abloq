@@ -1,5 +1,5 @@
 //ff:func feature=gate type=frame control=sequence
-//ff:what 게이트 룰 레지스트리 — 구조 7룰 + front-matter-schema/slug-consistency/honest-lastmod/hreflang-complete (11룰, 고정 순서)
+//ff:what 게이트 룰 레지스트리 — 구조 7룰 + 스키마·일관성 4룰 + 근거 3룰(min-sources/numeric-claim-sourced/citation-exists), 14룰 고정 순서
 package gate
 
 // Rules returns the gate's rule catalog in execution order. The first seven
@@ -18,5 +18,8 @@ func Rules() []Rule {
 		{ID: "slug-consistency", Desc: "same slug across all language versions, no missing language", Check: ruleSlugConsistency},
 		{ID: "honest-lastmod", Desc: "lastmod updates require a meaningful body diff (and queue membership)", Check: ruleHonestLastmod},
 		{ID: "hreflang-complete", Desc: "built pages cross-reference every language version via hreflang", Check: ruleHreflangComplete},
+		{ID: "min-sources", Desc: "the sources section lists at least geo.min_sources entries", Check: ruleMinSources},
+		{ID: "numeric-claim-sourced", Desc: "every numeric claim carries a source link in its paragraph", Check: ruleNumericClaimSourced},
+		{ID: "citation-exists", Desc: "new citation URLs answer HTTP 200 and match the cited title (skipped offline)", Check: ruleCitationExists},
 	}
 }

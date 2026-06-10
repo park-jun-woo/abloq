@@ -9,7 +9,7 @@ import (
 
 func TestRunGateError(t *testing.T) {
 	var out bytes.Buffer
-	if err := runGate(&out, t.TempDir(), "", false); err == nil {
+	if err := runGate(&out, t.TempDir(), "", false, false); err == nil {
 		t.Errorf("want error for dir without blog.yaml, got nil")
 	}
 }
