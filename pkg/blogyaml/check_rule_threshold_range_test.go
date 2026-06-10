@@ -4,12 +4,13 @@ package blogyaml
 
 import "testing"
 
-func checkRuleThresholdRange(t *testing.T, freshnessDays, minSources, minInternalLinks, wantDiags int) {
+func checkRuleThresholdRange(t *testing.T, freshnessDays, minSources, minInternalLinks, minMeaningfulDiff, wantDiags int) {
 	t.Helper()
 	b := &Blog{Geo: Geo{
-		FreshnessDays:    freshnessDays,
-		MinSources:       minSources,
-		MinInternalLinks: minInternalLinks,
+		FreshnessDays:     freshnessDays,
+		MinSources:        minSources,
+		MinInternalLinks:  minInternalLinks,
+		MinMeaningfulDiff: minMeaningfulDiff,
 	}}
 	diags := ruleThresholdRange("blog.yaml", b, lineIndex{})
 	if len(diags) != wantDiags {

@@ -8,11 +8,12 @@ package blogyaml
 func defaultBlog() Blog {
 	return Blog{
 		Geo: Geo{
-			LlmsTxt:          "auto",
-			JSONLD:           []string{"Article", "Person"},
-			FreshnessDays:    90,
-			MinSources:       1,
-			MinInternalLinks: 2,
+			LlmsTxt:           "auto",
+			JSONLD:            []string{"Article", "Person"},
+			FreshnessDays:     90,
+			MinSources:        1,
+			MinInternalLinks:  2,
+			MinMeaningfulDiff: 10,
 		},
 		Deploy: Deploy{
 			Provider:  "s3-cloudfront",

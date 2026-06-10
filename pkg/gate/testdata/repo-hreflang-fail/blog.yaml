@@ -1,0 +1,16 @@
+# hreflang FAIL 미니 저장소 — ko 페이지 미빌드 + en 페이지 ko 대체 링크 누락
+site:
+  baseURL: https://example.com
+  title: Gate Fixture
+  author: Tester
+
+languages: [ko, en]
+sections: [tech]
+
+structure:
+  order: [image, attribution, body, related, further, sources, changelog]
+  headings:
+    related: { ko: "관련 글", en: "Related" }
+    further: { ko: "더 읽기", en: "Further Reading" }
+    sources: { ko: "출처", en: "Sources" }
+    changelog: { ko: "변경 이력", en: "Changelog" }

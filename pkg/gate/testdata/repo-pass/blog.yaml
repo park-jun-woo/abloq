@@ -1,0 +1,16 @@
+# 통합 PASS 미니 저장소 — 전 룰 위반 0
+site:
+  baseURL: https://example.com
+  title: Gate Fixture
+  author: Tester
+
+languages: [ko, en]
+sections: [tech]
+
+structure:
+  order: [image, attribution, body, related, further, sources, changelog]
+  headings:
+    related: { ko: "관련 글", en: "Related" }
+    further: { ko: "더 읽기", en: "Further Reading" }
+    sources: { ko: "출처", en: "Sources" }
+    changelog: { ko: "변경 이력", en: "Changelog" }

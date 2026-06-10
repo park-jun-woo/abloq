@@ -1,10 +1,11 @@
-# abloq codebook — filefunc 어휘 (Phase001~002 범위, 이후 Phase에서 증보)
+# abloq codebook — filefunc 어휘 (Phase001~003 범위, 이후 Phase에서 증보)
 required:
   feature:
     blogyaml: "blog.yaml SSOT — 스키마, strict 파싱, 기본값 주입, 검증 룰"
     cli: "abloq CLI — cobra 명령과 진단 출력"
     gen: "blog.yaml 파생물 생성기 — hugo.toml/robots.txt/llms.txt/JSON-LD 멱등 렌더링과 드리프트 체크"
     bots: "AI봇 UA 사전 — 훈련/검색/fetch 분류, robots 생성과 크롤 수집(Phase012)이 공유"
+    gate: "구조 게이트 룰셋 — 저장소+blog.yaml+대상 글 입력으로 룰 단위 진단 생성, reins가 라이브러리로 호출"
   type:
     schema: "도메인 데이터 모델 — blog.yaml 스키마, 진단, 봇 UA, 발행 글, 산출물"
     parser: "파싱·수집 — strict YAML 디코드, front matter, 콘텐츠 스캔, 라인 인덱스"
@@ -13,8 +14,11 @@ required:
     output: "진단 출력 포맷 (text / json)"
     generator: "파생물 렌더러 — 같은 입력이면 바이트 동일 출력 (멱등)"
     dict: "정적 사전 데이터 제공과 조회"
+    frame: "게이트 공통 프레임 — 타깃 조립, 룰 레지스트리, 실행기, 글 수집"
 
 optional:
   topic:
     diagnostics: "파일:라인 [룰ID] 메시지 진단 형식"
     drift: "재생성 결과와 디스크 산출물의 바이트 비교 진단"
+    baseline: "git HEAD 스냅샷을 원본으로 한 변경 전후 비교 (치즈 방어)"
+    lossless: "본문 무손실 multiset 비교 — 번역·재배열 퀘스트의 치즈 방어"

@@ -16,7 +16,7 @@ func TestValidate(t *testing.T) {
 	for _, d := range diags {
 		rules = append(rules, d.Rule)
 	}
-	want := []string{"lang-bcp47", "sections-empty", "threshold-range", "baseurl-format", "crawlers-policy"}
+	want := []string{"lang-bcp47", "sections-empty", "threshold-range", "threshold-range", "baseurl-format", "crawlers-policy"}
 	if !reflect.DeepEqual(rules, want) {
 		t.Errorf("want rules %v in order, got %v", want, rules)
 	}

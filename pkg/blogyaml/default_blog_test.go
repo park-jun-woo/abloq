@@ -24,6 +24,9 @@ func TestDefaultBlog(t *testing.T) {
 	if b.Geo.MinInternalLinks != 2 {
 		t.Errorf("want min_internal_links 2, got %d", b.Geo.MinInternalLinks)
 	}
+	if b.Geo.MinMeaningfulDiff != 10 {
+		t.Errorf("want min_meaningful_diff 10, got %d", b.Geo.MinMeaningfulDiff)
+	}
 	if b.Deploy.Provider != "s3-cloudfront" {
 		t.Errorf("want provider s3-cloudfront, got %q", b.Deploy.Provider)
 	}

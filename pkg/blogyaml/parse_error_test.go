@@ -5,6 +5,9 @@ package blogyaml
 import "testing"
 
 func TestParseError(t *testing.T) {
+	if b, _, diags := Parse("blog.yaml", nil); b != nil || len(diags) != 1 {
+		t.Fatalf("nil input: want nil Blog and 1 diagnostic, got %v %v", b, diags)
+	}
 	cases := []struct {
 		name    string
 		src     string

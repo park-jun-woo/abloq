@@ -30,6 +30,7 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `geo.freshness_days` | int | | `90` | 신선도 퀘스트 임계 (≥ 1) |
 | `geo.min_sources` | int | | `1` | 근거 게이트 임계 (≥ 0) |
 | `geo.min_internal_links` | int | | `2` | 클러스터 게이트 임계 (≥ 0) |
+| `geo.min_meaningful_diff` | int | | `10` | honest-lastmod 임계 — 공백·구두점 정규화 후 토큰 diff가 이 값 미만이면 lastmod 갱신 거부 (≥ 1) |
 | `deploy.provider` | string | | `s3-cloudfront` | 배포 대상 |
 | `deploy.terraform` | bool | | `false` | IaC 생성 여부 |
 | `deploy.indexnow` | bool | | `true` | 배포 후 IndexNow 핑 |
@@ -43,7 +44,7 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `lang-bcp47` | `languages` 비어있지 않음 + 각 항목 BCP-47 유효 |
 | `heading-default-lang` | `structure.headings`의 각 헤딩 키에 기본 언어 항목 존재 |
 | `sections-empty` | `sections` 1개 이상 |
-| `threshold-range` | `freshness_days ≥ 1`, `min_sources ≥ 0`, `min_internal_links ≥ 0` |
+| `threshold-range` | `freshness_days ≥ 1`, `min_sources ≥ 0`, `min_internal_links ≥ 0`, `min_meaningful_diff ≥ 1` |
 | `baseurl-format` | 절대 http(s) URL, host 존재, query/fragment 없음 |
 | `crawlers-policy` | `geo.crawlers` 값이 `allow` \| `block` |
 
@@ -71,6 +72,7 @@ geo:
   freshness_days: 90
   min_sources: 1
   min_internal_links: 2
+  min_meaningful_diff: 10
 
 deploy:
   provider: s3-cloudfront
