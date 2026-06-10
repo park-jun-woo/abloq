@@ -76,3 +76,26 @@ SELECT * FROM queue_items
 WHERE (@kind::text = '' OR kind = @kind::text)
   AND (@status::text = '' OR status = @status::text)
 ORDER BY priority DESC, id;
+
+-- name: QueueItemAggMonthCountsJson :one
+-- Queue intake summary of the report window: rows created (UTC date) inside
+-- the 30 days ending on the last day of @ym, counted per (kind, status).
+-- created_at is DB NOW(), so an explicit past ym deterministically reads 0
+-- — the Hurl oracle; non-zero goldens live in the pkg tests.
+WITH bounds AS (
+    SELECT (date_trunc('month', CASE WHEN @ym::text = ''
+                THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
+                ELSE to_date(@ym::text || '-01', 'YYYY-MM-DD')::timestamp END)
+            + interval '1 month - 1 day')::date AS month_end
+)
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'kind', s.kind,
+           'status', s.status,
+           'count', s.cnt
+       ) ORDER BY s.kind, s.status), '[]'::jsonb)::text
+FROM (
+    SELECT qi.kind, qi.status, COUNT(*)::BIGINT AS cnt
+    FROM queue_items qi, bounds b
+    WHERE (qi.created_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
+    GROUP BY qi.kind, qi.status
+) AS s;

@@ -23,3 +23,48 @@ ON CONFLICT (snap_date, page) DO UPDATE
 SET impressions = EXCLUDED.impressions,
     clicks = EXCLUDED.clicks,
     avg_position = EXCLUDED.avg_position;
+
+-- name: GscSnapshotAggPageMonthJson :one
+-- Per-page impression/click sums over the report window ('' = the last
+-- closed month, UTC). Pages stay full URLs: the page->article attribution
+-- happens in Go via the repository URL map (blog.yaml owns the URL rules),
+-- so SQL must never LIKE-join them.
+WITH bounds AS (
+    SELECT (date_trunc('month', CASE WHEN @ym::text = ''
+                THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
+                ELSE to_date(@ym::text || '-01', 'YYYY-MM-DD')::timestamp END)
+            + interval '1 month - 1 day')::date AS month_end
+)
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'page', s.page,
+           'impressions', s.impressions,
+           'clicks', s.clicks
+       ) ORDER BY s.page), '[]'::jsonb)::text
+FROM (
+    SELECT g.page,
+           SUM(g.impressions)::BIGINT AS impressions, SUM(g.clicks)::BIGINT AS clicks
+    FROM gsc_snapshots g, bounds b
+    WHERE g.snap_date BETWEEN b.month_end - 29 AND b.month_end
+    GROUP BY g.page
+) AS s;
+
+-- name: GscSnapshotAggPagePrevMonthJson :one
+-- The same aggregate over the previous month's window (trend column).
+WITH bounds AS (
+    SELECT (date_trunc('month', CASE WHEN @ym::text = ''
+                THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
+                ELSE to_date(@ym::text || '-01', 'YYYY-MM-DD')::timestamp END)
+            - interval '1 day')::date AS month_end
+)
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'page', s.page,
+           'impressions', s.impressions,
+           'clicks', s.clicks
+       ) ORDER BY s.page), '[]'::jsonb)::text
+FROM (
+    SELECT g.page,
+           SUM(g.impressions)::BIGINT AS impressions, SUM(g.clicks)::BIGINT AS clicks
+    FROM gsc_snapshots g, bounds b
+    WHERE g.snap_date BETWEEN b.month_end - 29 AND b.month_end
+    GROUP BY g.page
+) AS s;

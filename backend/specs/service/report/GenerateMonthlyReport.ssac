@@ -1,0 +1,28 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/report"
+
+// Monthly visibility report (monthly cron, body ym '' = the last closed
+// month — each window @get resolves the default inside its own SQL CASE,
+// the func recomputes the same definition for the stored ym; an explicit
+// ym is clock-free). The aggregates ride in as JSON scalars: bot rows stay
+// unclassified (pkg/bots owns the categories) and GSC rows stay page URLs
+// (the repository URL map owns the attribution) — neither mapping exists
+// in the database. The func renders markdown + JSON and pushes the
+// markdown publication copy (reports/<ym>.md, queueio git layer, idempotent
+// no-op); the upsert below stays the lookup truth.
+
+// @auth "GenerateMonthlyReport" "report" {} "Forbidden" 403
+// @get string postsJson = Post.AggAllJson()
+// @get string botsJson = CrawlHit.AggBotMonthJson({Ym: request.ym})
+// @get string prevBotsJson = CrawlHit.AggBotPrevMonthJson({Ym: request.ym})
+// @get string gscJson = GscSnapshot.AggPageMonthJson({Ym: request.ym})
+// @get string prevGscJson = GscSnapshot.AggPagePrevMonthJson({Ym: request.ym})
+// @get string citesJson = CitationSample.AggMonthJson({Ym: request.ym})
+// @get string prevCitesJson = CitationSample.AggPrevMonthJson({Ym: request.ym})
+// @get string queueJson = QueueItem.AggMonthCountsJson({Ym: request.ym})
+// @get string unknownJson = UnknownBot.AggUasJson()
+// @call MonthlyResponse rep = report.Monthly({Ym: request.ym, PostsJSON: postsJson, BotsJSON: botsJson, PrevBotsJSON: prevBotsJson, GscJSON: gscJson, PrevGscJSON: prevGscJson, CitesJSON: citesJson, PrevCitesJSON: prevCitesJson, QueueJSON: queueJson, UnknownJSON: unknownJson})
+// @put Report.Upsert({Ym: rep.Ym, Markdown: rep.Markdown, ReportJson: rep.ReportJSON})
+// @response { ym: rep.Ym, articles: rep.Articles, published: rep.Published }
+func GenerateMonthlyReport() {}

@@ -17,7 +17,7 @@ func TestScan(t *testing.T) {
 		{Lang: "ko", Section: "tech", Slug: "fresh", Date: "2026-06-10", Lastmod: "2026-06-10"},
 		{Lang: "ko", Section: "tech", Slug: "bad-date", Date: "", Lastmod: "unparseable"},
 	}
-	items := Scan(entries, map[string]int64{}, 1, now, priority.ColdStart{})
+	items := Scan(entries, map[string]priority.Signals{}, 1, now, priority.ColdStart{})
 	if len(items) != 1 {
 		t.Fatalf("want 1 stale item, got %d: %+v", len(items), items)
 	}
@@ -32,8 +32,8 @@ func TestScan(t *testing.T) {
 		t.Errorf("cold-start priority must be the date score: %d", it.Priority)
 	}
 	// Crawl hits override the date fallback.
-	hits := map[string]int64{"ko/tech/stale-a": 42}
-	items = Scan(entries, hits, 1, now, priority.ColdStart{})
+	signals := map[string]priority.Signals{"ko/tech/stale-a": {Hits: 42}}
+	items = Scan(entries, signals, 1, now, priority.ColdStart{})
 	if items[0].Priority != 42 {
 		t.Errorf("hits sum must win: %d", items[0].Priority)
 	}

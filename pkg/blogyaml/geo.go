@@ -1,5 +1,5 @@
 //ff:type feature=blogyaml type=schema
-//ff:what blog.yaml geo 섹션 — crawlers 정책, llms_txt, jsonld, 게이트 임계값(freshness_days/min_sources/min_internal_links/min_meaningful_diff), 선택적 taxonomy, citation_budget(샘플링 비용 상한)
+//ff:what blog.yaml geo 섹션 — crawlers 정책, llms_txt, jsonld, 게이트 임계값(freshness_days/min_sources/min_internal_links/min_meaningful_diff), 선택적 taxonomy, citation_budget(샘플링 비용 상한), priority_weights(우선순위 가중)
 package blogyaml
 
 // Geo declares GEO (Generative Engine Optimization) policy and gate thresholds.
@@ -9,6 +9,8 @@ package blogyaml
 // scanner's tag-taxonomy check is silently skipped (Phase011).
 // CitationBudget caps one citation-sampling round: the maximum number of
 // queries per engine (0 = sampling disabled, the opt-in default — Phase013).
+// PriorityWeights are the measurement-signal coefficients of the Phase014
+// priority scorer.
 type Geo struct {
 	Crawlers          map[string]string `yaml:"crawlers" json:"crawlers"`
 	LlmsTxt           string            `yaml:"llms_txt" json:"llms_txt"`
@@ -19,4 +21,5 @@ type Geo struct {
 	MinMeaningfulDiff int               `yaml:"min_meaningful_diff" json:"min_meaningful_diff"`
 	CitationBudget    int               `yaml:"citation_budget" json:"citation_budget"`
 	Taxonomy          []string          `yaml:"taxonomy" json:"taxonomy"`
+	PriorityWeights   PriorityWeights   `yaml:"priority_weights" json:"priority_weights"`
 }

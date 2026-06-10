@@ -10,8 +10,12 @@
 # first: its cold-start priority assert needs empty crawl_hits AND empty
 # queue_items; scenario-crawl after it for the same reason;
 # scenario-gsc-citation before smoke — smoke re-runs its ops loosely;
-# smoke last), and tears everything down. Login is rate-limited 5/min/IP,
-# so the run sleeps 61s between the login batches (4+3+2 logins). The
+# scenario-report after a fixed-month psql seed — POST /ingest/* cursors are
+# now-relative and cannot land rows in a fixed past month, so the 2026-04
+# crawl/GSC rows are seeded directly (users seed precedent); smoke last),
+# verifies the report publication copy in the bare origin, and tears
+# everything down. Login is rate-limited 5/min/IP,
+# so the run sleeps 61s between the login batches (4+3+3 logins). The
 # cluster instance additionally runs scenario-citation-budget0: the
 # cluster-blog fixture leaves citation_budget at 0, the budget no-op
 # oracle the shared fixture (citation_budget: 2) cannot express.
@@ -150,9 +154,36 @@ hurl --test --variable "host=$HOST" \
   "$TESTS/scenario-gsc-citation.hurl"
 echo "sleeping 61s (login rate limit window)..."
 sleep 61
+
+# fixed-month seed for scenario-report (2026-04 window + 2026-03 trend):
+# deterministic forever — NOW() can never fall inside a fixed past month,
+# so the citation/queue layers of that window stay zero by construction.
+"$PG/psql" -q -h 127.0.0.1 -p "$PGPORT" -U postgres -d abloqd <<'SQL'
+INSERT INTO crawl_hits (hit_date, bot, lang, section, slug, hits, md_hits) VALUES
+  ('2026-04-10', 'GPTBot',       'ko', 'tech', 'post-a', 7, 2),
+  ('2026-04-12', 'ChatGPT-User', 'ko', 'tech', 'post-a', 3, 0),
+  ('2026-04-15', 'ClaudeBot',    'ko', 'tech', 'post-b', 4, 1),
+  ('2026-03-20', 'GPTBot',       'ko', 'tech', 'post-a', 5, 0);
+INSERT INTO gsc_snapshots (snap_date, page, impressions, clicks, avg_position) VALUES
+  ('2026-04-10', 'https://fixture.example.com/tech/post-a/', 120, 8, 3.2),
+  ('2026-04-11', 'https://fixture.example.com/tech/post-b/',  40, 2, 7.5),
+  ('2026-03-15', 'https://fixture.example.com/tech/post-a/',  60, 1, 9.9);
+SQL
+
 hurl --test --variable "host=$HOST" \
+  "$TESTS/scenario-report.hurl" \
   "$TESTS/smoke.hurl"
 stop_abloqd
+
+# git publication leg: the report markdown landed in the bare origin as a
+# publication copy (the DB row stays the lookup truth).
+git clone -q "file://$WORK/bare-a" "$WORK/report-check"
+grep -q '# Visibility report 2026-04' "$WORK/report-check/reports/2026-04.md" \
+  || { echo "FAIL: reports/2026-04.md missing or wrong in the bare origin" >&2; exit 1; }
+grep -q '| ko/tech/post-a | 2026-06-01 | 7 | 0 | 3 | 2 | 120 | 8 | 0 | 136 |' \
+  "$WORK/report-check/reports/2026-04.md" \
+  || { echo "FAIL: published report row drifted" >&2; exit 1; }
+echo "ok: report publication copy verified in the bare origin"
 
 # ⑤ dedicated cluster instance (own DB, own fixture, fresh limiter) —
 # cluster oracle + the citation budget=0 no-op oracle (citation_budget

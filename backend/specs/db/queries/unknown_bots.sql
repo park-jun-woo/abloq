@@ -15,3 +15,13 @@ ON CONFLICT (ua) DO UPDATE
 SET hits = unknown_bots.hits + EXCLUDED.hits,
     first_seen = LEAST(unknown_bots.first_seen, EXCLUDED.first_seen),
     last_seen = GREATEST(unknown_bots.last_seen, EXCLUDED.last_seen);
+
+-- name: UnknownBotAggUasJson :one
+-- Unknown-bot candidates for the report (dictionary-update input): every
+-- accumulated UA with its hit count, busiest first. Not windowed — the list
+-- is a standing to-do, not a monthly metric.
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'ua', ua,
+           'hits', hits
+       ) ORDER BY hits DESC, ua), '[]'::jsonb)::text
+FROM unknown_bots;

@@ -27,6 +27,10 @@ jsonpath "$.synced" == 2
 # Scan: both fixture posts exceeded the 1-day freshness threshold
 POST {{host}}/scans/freshness
 Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 2
@@ -49,6 +53,10 @@ jsonpath "$.items[0].status" == "open"
 # Re-scan: detection repeats but the insert is duplicate-free
 POST {{host}}/scans/freshness
 Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 2

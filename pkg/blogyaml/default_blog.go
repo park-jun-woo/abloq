@@ -17,6 +17,12 @@ func defaultBlog() Blog {
 			MinSources:        1,
 			MinInternalLinks:  2,
 			MinMeaningfulDiff: 10,
+			PriorityWeights: PriorityWeights{
+				Fetcher:  3,
+				Train:    1,
+				GSC:      1,
+				Citation: 2,
+			},
 		},
 		Deploy: Deploy{
 			Provider:  "s3-cloudfront",

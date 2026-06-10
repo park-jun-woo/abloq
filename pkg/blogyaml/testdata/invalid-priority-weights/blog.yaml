@@ -1,0 +1,14 @@
+# 오류 예제: priority-weights-range — 가중치는 0 이상이어야 함
+site:
+  baseURL: https://parkjunwoo.com
+  title: Junwoo Park
+  author: Junwoo Park
+languages: [ko, en]
+sections: [tech]
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }
+geo:
+  priority_weights:
+    fetcher: -1

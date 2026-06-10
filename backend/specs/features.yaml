@@ -14,6 +14,7 @@ tables:
     belongs_to:
       - citation_queries
   citation_checks: {}
+  reports: {}
 
 features:
   - op: Login
@@ -54,7 +55,7 @@ features:
 
   - op: ScanFreshness
     path: POST /scans/freshness
-    desc: Detect articles whose lastmod exceeded geo.freshness_days and enqueue refresh candidates (idempotent — open/exported duplicates are skipped)
+    desc: Detect articles whose lastmod exceeded geo.freshness_days and enqueue refresh candidates priced by the composite priority scorer (idempotent — open/exported duplicates are skipped)
     table: queue_items
 
   - op: ScanEvidence
@@ -116,3 +117,13 @@ features:
     path: GET /citations
     desc: List recorded citation samples joined with their queries, filtered by slug (trend readout only — feeds no gate)
     table: citation_samples
+
+  - op: GenerateMonthlyReport
+    path: POST /reports/monthly
+    desc: Assemble the monthly visibility report (crawl x index x citation per article, trend, unknown bots, queue intake), upsert it per ym and publish the markdown copy to the blog repository
+    table: reports
+
+  - op: GetMonthlyReport
+    path: GET /reports/monthly/{ym}
+    desc: Read one stored monthly visibility report by ym (the DB row is the lookup truth)
+    table: reports

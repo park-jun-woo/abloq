@@ -30,6 +30,13 @@ func TestDefaultBlog(t *testing.T) {
 	if b.Geo.MinMeaningfulDiff != 10 {
 		t.Errorf("want min_meaningful_diff 10, got %d", b.Geo.MinMeaningfulDiff)
 	}
+	w := b.Geo.PriorityWeights
+	if w.Fetcher != 3 || w.Train != 1 || w.GSC != 1 || w.Citation != 2 {
+		t.Errorf("want priority_weights {3 1 1 2} (fetcher highest), got %+v", w)
+	}
+	if w.Fetcher <= w.Train || w.Fetcher <= w.GSC || w.Fetcher <= w.Citation {
+		t.Errorf("fetcher must carry the highest default weight: %+v", w)
+	}
 	if b.Deploy.Provider != "s3-cloudfront" {
 		t.Errorf("want provider s3-cloudfront, got %q", b.Deploy.Provider)
 	}

@@ -35,6 +35,7 @@ services:
       - ../../backend/arts/db/migrations/0001_initial.up.sql:/docker-entrypoint-initdb.d/0001_initial.up.sql:ro
       - ../../backend/arts/db/migrations/0002_create_ingest_cursors_and_more.up.sql:/docker-entrypoint-initdb.d/0002_create_ingest_cursors_and_more.up.sql:ro
       - ../../backend/arts/db/migrations/0003_add_citation_samples_extractor_version.up.sql:/docker-entrypoint-initdb.d/0003_add_citation_samples_extractor_version.up.sql:ro
+      - ../../backend/arts/db/migrations/0004_create_reports_and_more.up.sql:/docker-entrypoint-initdb.d/0004_create_reports_and_more.up.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abloqd} -d ${POSTGRES_DB:-abloqd}"]
       interval: 5s
@@ -243,6 +244,42 @@ services:
           TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login             -H 'Content-Type: application/json'             -d "{"email":"$$ABLOQD_OPERATOR_EMAIL","password":"$$ABLOQD_OPERATOR_PASSWORD"}"             | jq -r .access_token) || { echo "citation: login failed"; continue; }
           # ② sample — budget 상한 1회전 (budget 0이면 no-op)
           curl -sf -m 600 -X POST http://abloqd:8080/sample/citations             -H "Authorization: Bearer $$TOKEN" >/dev/null             || echo "citation: sample failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 월간 리포트 cron (Phase014, 권고 월간) — 크롤×색인×인용 결합 리포트를
+  # 생성·저장하고 markdown 발행 사본을 블로그 저장소에 푸시한다. body의
+  # ym=''는 직전 닫힌 월(UTC) — 윈도 @get SQL이 자체 해석하므로 cron은
+  # 항상 body를 고정해 보낸다. 멱등 — 같은 ym 재생성은 upsert 수렴 +
+  # 동일 내용 git no-op. 발행은 큐 exporter와 같은 QUEUE_EXPORT_* env를
+  # 공유하되 작업 클론은 "-reports" 접미사로 분리된다.
+  # 켜기: docker compose --profile report up -d
+  report-monthly:
+    image: alpine:3.21
+    profiles: ["report"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the monthly report cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the monthly report cron}
+      REPORT_PERIOD_SECONDS: ${REPORT_PERIOD_SECONDS:-2592000}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$REPORT_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "report: login failed"; continue; }
+          # ② generate — 직전 닫힌 월 리포트 생성·발행 (멱등)
+          curl -sf -m 600 -X POST http://abloqd:8080/reports/monthly \
+            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+            -d '{"ym":""}' >/dev/null \
+            || echo "report: generate failed (next cycle retries)"
         done
     restart: unless-stopped
 

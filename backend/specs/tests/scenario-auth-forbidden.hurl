@@ -59,6 +59,10 @@ HTTP 403
 # ScanFreshness is forbidden for non-operators
 POST {{host}}/scans/freshness
 Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
 HTTP 403
 
 # ScanEvidence is forbidden for non-operators
@@ -130,4 +134,20 @@ HTTP 403
 # ListCitations is forbidden for non-operators
 GET {{host}}/citations
 Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# GenerateMonthlyReport is forbidden for non-operators
+POST {{host}}/reports/monthly
+Authorization: Bearer {{viewer_token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
+HTTP 403
+
+# GetMonthlyReport is forbidden for non-operators
+GET {{host}}/reports/monthly/{{forbidden_ym}}
+Authorization: Bearer {{viewer_token}}
+[Options]
+variable: forbidden_ym="2026-04"
 HTTP 403

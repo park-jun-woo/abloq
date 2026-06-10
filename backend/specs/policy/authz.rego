@@ -134,3 +134,17 @@ allow if {
     input.resource == "citation_sample"
     input.claims.role == "operator"
 }
+
+# Operator-only: assemble and publish the monthly visibility report
+allow if {
+    input.action == "GenerateMonthlyReport"
+    input.resource == "report"
+    input.claims.role == "operator"
+}
+
+# Operator-only: read a stored monthly visibility report
+allow if {
+    input.action == "GetMonthlyReport"
+    input.resource == "report"
+    input.claims.role == "operator"
+}

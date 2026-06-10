@@ -86,6 +86,10 @@ jsonpath "$.receipts" count == 3
 # itself is duplicate-free, so re-runs detect 2 and enqueue at most 2
 POST {{host}}/scans/freshness
 Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 2
@@ -201,3 +205,28 @@ Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.active" == false
+
+# GenerateMonthlyReport — default ym ('' = the last closed month); queue and
+# citation layers of that window are deterministically empty (created_at /
+# run_at are NOW(), never inside a closed month)
+POST {{host}}/reports/monthly
+Authorization: Bearer {{token}}
+Content-Type: application/json
+{
+  "ym": ""
+}
+HTTP 200
+[Captures]
+report_ym: jsonpath "$.ym"
+[Asserts]
+jsonpath "$.ym" matches "^[0-9]{4}-[0-9]{2}$"
+jsonpath "$.articles" >= 2
+
+# GetMonthlyReport — the stored row is the lookup truth
+GET {{host}}/reports/monthly/{{report_ym}}
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.ym" == "{{report_ym}}"
+jsonpath "$.markdown" contains "Visibility report"
+jsonpath "$.report_json" contains "\"articles\""

@@ -49,3 +49,58 @@ WHERE (@lang::text = '' OR lang = @lang::text)
   AND (@from_date::text = '' OR hit_date >= (@from_date::text)::date)
   AND (@to_date::text = '' OR hit_date <= (@to_date::text)::date)
 ORDER BY hit_date, bot, lang, section, slug;
+
+-- name: CrawlHitAggBotMonthJson :one
+-- Per-(bot, article) sums over the report window: the 30 days ending on the
+-- last day of @ym, both ends included ('' = the last closed month, UTC —
+-- the only branch where NOW() enters; an explicit ym is clock-free). The
+-- bot name stays unclassified: the training/search/fetch split lives only
+-- in the pkg/bots Go dictionary, so SQL must never attempt it.
+WITH bounds AS (
+    SELECT (date_trunc('month', CASE WHEN @ym::text = ''
+                THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
+                ELSE to_date(@ym::text || '-01', 'YYYY-MM-DD')::timestamp END)
+            + interval '1 month - 1 day')::date AS month_end
+)
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'bot', s.bot,
+           'lang', s.lang,
+           'section', s.section,
+           'slug', s.slug,
+           'hits', s.hits,
+           'md_hits', s.md_hits
+       ) ORDER BY s.bot, s.lang, s.section, s.slug), '[]'::jsonb)::text
+FROM (
+    SELECT c.bot, c.lang, c.section, c.slug,
+           SUM(c.hits)::BIGINT AS hits, SUM(c.md_hits)::BIGINT AS md_hits
+    FROM crawl_hits c, bounds b
+    WHERE c.hit_date BETWEEN b.month_end - 29 AND b.month_end
+    GROUP BY c.bot, c.lang, c.section, c.slug
+) AS s;
+
+-- name: CrawlHitAggBotPrevMonthJson :one
+-- The same aggregate over the previous month's window (month-over-month
+-- trend): the 30 days ending on the last day of the month before @ym. The
+-- month shift happens here because SSaC is linear — no ym arithmetic can
+-- run between sequence steps.
+WITH bounds AS (
+    SELECT (date_trunc('month', CASE WHEN @ym::text = ''
+                THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
+                ELSE to_date(@ym::text || '-01', 'YYYY-MM-DD')::timestamp END)
+            - interval '1 day')::date AS month_end
+)
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'bot', s.bot,
+           'lang', s.lang,
+           'section', s.section,
+           'slug', s.slug,
+           'hits', s.hits,
+           'md_hits', s.md_hits
+       ) ORDER BY s.bot, s.lang, s.section, s.slug), '[]'::jsonb)::text
+FROM (
+    SELECT c.bot, c.lang, c.section, c.slug,
+           SUM(c.hits)::BIGINT AS hits, SUM(c.md_hits)::BIGINT AS md_hits
+    FROM crawl_hits c, bounds b
+    WHERE c.hit_date BETWEEN b.month_end - 29 AND b.month_end
+    GROUP BY c.bot, c.lang, c.section, c.slug
+) AS s;

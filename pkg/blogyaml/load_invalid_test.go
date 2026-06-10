@@ -1,5 +1,5 @@
 //ff:func feature=blogyaml type=rule control=iteration dimension=1
-//ff:what 골든 테스트 — 오류 예제 6종이 각각 의도한 룰ID 1건으로 실패하는지 검증
+//ff:what 골든 테스트 — 오류 예제 7종이 각각 의도한 룰ID 1건으로 실패하는지 검증
 package blogyaml
 
 import (
@@ -13,6 +13,7 @@ func TestLoadInvalid(t *testing.T) {
 		{"invalid-heading", "heading-default-lang"},
 		{"invalid-sections", "sections-empty"},
 		{"invalid-threshold", "threshold-range"},
+		{"invalid-priority-weights", "priority-weights-range"},
 		{"invalid-baseurl", "baseurl-format"},
 		{"invalid-crawlers", "crawlers-policy"},
 	}

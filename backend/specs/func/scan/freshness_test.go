@@ -12,13 +12,22 @@ import (
 func TestFreshness(t *testing.T) {
 	dir := t.TempDir()
 	blogYAML := "site:\n  baseURL: https://t.example.com\n  title: T\n  author: A\n" +
-		"languages: [ko]\nsections: [tech]\ngeo:\n  freshness_days: 1\n"
+		"  default_lang_in_subdir: false\nlanguages: [ko]\nsections: [tech]\ngeo:\n  freshness_days: 1\n"
 	if err := os.WriteFile(filepath.Join(dir, "blog.yaml"), []byte(blogYAML), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// One published article so the URL map can attribute the GSC page.
+	post := "---\ntitle: A\ndate: 2026-06-01\nlastmod: 2026-06-05\ndraft: false\n---\n\nbody\n"
+	if err := os.MkdirAll(filepath.Join(dir, "content", "ko", "tech"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "content", "ko", "tech", "post-a.md"), []byte(post), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("BLOG_REPO_PATH", dir)
 	posts := `[{"lang":"ko","section":"tech","slug":"post-a","date":"2026-06-01","lastmod":"2026-06-05"}]`
-	resp, err := Freshness(FreshnessRequest{PostsJSON: posts, HitsJSON: "[]"})
+	empty := FreshnessRequest{PostsJSON: posts, HitsJSON: "[]", BotsJSON: "[]", GscJSON: "[]", CitesJSON: "[]"}
+	resp, err := Freshness(empty)
 	if err != nil {
 		t.Fatalf("Freshness: %v", err)
 	}
@@ -32,18 +41,37 @@ func TestFreshness(t *testing.T) {
 	if rows[0].Kind != "refresh" || rows[0].Section != "tech" {
 		t.Errorf("unexpected row: %+v", rows[0])
 	}
-	// Crawl hits flow into the priority.
-	hits := `[{"lang":"ko","section":"tech","slug":"post-a","hits":42}]`
-	resp, err = Freshness(FreshnessRequest{PostsJSON: posts, HitsJSON: hits})
+	// No measurement signals at all — the cold-start date score (epoch days).
+	if rows[0].Priority != 20605 {
+		t.Errorf("cold-start fallback must keep the date score untouched: %d", rows[0].Priority)
+	}
+	// All-time crawl hits flow into the cold-start priority.
+	req := empty
+	req.HitsJSON = `[{"lang":"ko","section":"tech","slug":"post-a","hits":42}]`
+	resp, err = Freshness(req)
 	if err != nil {
 		t.Fatal(err)
 	}
 	rows, _ = pqueueio.DecodeRows(resp.ItemsJSON)
 	if rows[0].Priority != 42 {
-		t.Errorf("hits sum must win the priority: %d", rows[0].Priority)
+		t.Errorf("hits sum must win the cold-start priority: %d", rows[0].Priority)
+	}
+	// Measured window signals route to the weighted score (defaults
+	// fetcher=3, train=1, gsc=1, citation=2): 3*3 + 1*7 + 1*120 + 2*2 = 140.
+	req.BotsJSON = `[{"bot":"GPTBot","lang":"ko","section":"tech","slug":"post-a","hits":7,"md_hits":0},` +
+		`{"bot":"ChatGPT-User","lang":"ko","section":"tech","slug":"post-a","hits":3,"md_hits":0}]`
+	req.GscJSON = `[{"page":"https://t.example.com/tech/post-a/","impressions":120,"clicks":8}]`
+	req.CitesJSON = `[{"lang":"ko","section":"tech","slug":"post-a","cited":2,"total":3}]`
+	resp, err = Freshness(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows, _ = pqueueio.DecodeRows(resp.ItemsJSON)
+	if rows[0].Priority != 140 {
+		t.Errorf("measured priority must be the weighted sum 140: %d", rows[0].Priority)
 	}
 	t.Setenv("BLOG_REPO_PATH", "")
-	if _, err := Freshness(FreshnessRequest{PostsJSON: "[]", HitsJSON: "[]"}); err == nil {
+	if _, err := Freshness(empty); err == nil {
 		t.Error("missing BLOG_REPO_PATH must error")
 	}
 	var raw []map[string]any

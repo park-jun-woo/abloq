@@ -14,7 +14,7 @@ required:
     content: "콘텐츠 인덱서 — 발행 글 front matter 전수 파싱 → 인덱스 항목(posts 1행 대응), CLI와 abloqd 백엔드가 공유 (Phase007)"
     scan: "콘텐츠 스캐너 — freshness_days 초과 글·무출처 수치 주장·인용 link rot·클러스터 위반(태그·내부링크 그래프) 검출 → 우선순위 큐 후보, CLI와 abloqd 백엔드가 공유 (Phase009·010·011)"
     queueio: "큐 exporter 공통 모듈 — queue_items → quests/queue/*.yaml 결정적 직렬화 + 전용 작업 클론 커밋·푸시, 역방향 consumed 동기화 (Phase009, Phase010·011 재사용)"
-    visibility: "가시성 우선순위·수집 — 글별 신호(crawl_hits 합계, date)를 큐 우선순위 점수로 환산, CF 로그 크롤 수집, GSC 폴링·인용 샘플링 (Phase009 콜드스타트, Phase012 크롤 수집, Phase013 GSC·인용, Phase014 측정 기반 합류)"
+    visibility: "가시성 우선순위·수집·리포트 — 글별 신호(crawl_hits 합계, date, 30d 측정 4종)를 큐 우선순위 점수로 환산, CF 로그 크롤 수집, GSC 폴링·인용 샘플링, 월간 리포트 (Phase009 콜드스타트, Phase012 크롤 수집, Phase013 GSC·인용, Phase014 측정 합류·리포트)"
   type:
     schema: "도메인 데이터 모델 — blog.yaml 스키마, 진단, 봇 UA, 발행 글, 산출물"
     parser: "파싱·수집 — strict YAML 디코드, front matter, 콘텐츠 스캔, 라인 인덱스"
@@ -32,6 +32,7 @@ optional:
     gsc: "GSC 폴링 — Search Analytics 일간 노출·클릭·평균순위 수집(닫힌 일자 커서)과 URL Inspection 옵트인 선별 조회 (Phase013)"
     citation: "인용 샘플링 — 표준 질의를 AI 엔진(Perplexity/OpenAI/Anthropic)에 실행해 자기 도메인 인용 여부를 추세 기록, 판정 미입력 (Phase013)"
     crawl: "크롤 수집 — CF 로그 파싱·봇 분류·URI→글 매핑, crawl_hits/unknown_bots 적재와 analyze-stats.py 대조 (Phase012)"
+    report: "월간 가시성 리포트 — 크롤×색인×인용 글별 결합 표·전월 대비 추이·미지 봇·큐 적재 요약을 md+json으로 산출, ym 앵커 30d 윈도(now-파생 0), 측정 가중 우선순위와 같은 신호를 공유 (Phase014)"
     diagnostics: "파일:라인 [룰ID] 메시지 진단 형식"
     evidence: "근거 게이트 — 출처 수, 무출처 수치 주장, 인용 URL 실재 검증 (Phase010 스캐너와 검출기 공유)"
     cluster: "클러스터 스캐너 — 기본 언어 태그·내부링크 그래프, 위반 4종(taxonomy/고아 태그/링크 부족/고립)과 연결 후보 제안, topical authority 큐 (Phase011)"
