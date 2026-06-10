@@ -1,0 +1,30 @@
+tables:
+  users: {}
+  posts: {}
+  receipts: {}
+  queue_items: {}
+  crawl_hits: {}
+  gsc_snapshots: {}
+  citation_queries:
+    has_many:
+      - citation_samples
+  citation_samples:
+    belongs_to:
+      - citation_queries
+
+features:
+  - op: Login
+    path: POST /auth/login
+    desc: Authenticate the operator and issue a JWT bearer token
+    table: users
+    public: true
+
+  - op: Sync
+    path: POST /sync
+    desc: Parse every front matter in the blog repository and upsert the posts index
+    table: posts
+
+  - op: ListPosts
+    path: GET /posts
+    desc: List the indexed posts
+    table: posts

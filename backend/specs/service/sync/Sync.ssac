@@ -1,0 +1,9 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/content"
+
+// @auth "Sync" "post" {} "Forbidden" 403
+// @call IndexRepoResponse idx = content.IndexRepo({})
+// @put Post.SyncFromJson({EntriesJson: idx.EntriesJSON})
+// @response { synced: idx.Count }
+func Sync() {}

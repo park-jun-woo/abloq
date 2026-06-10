@@ -1,0 +1,24 @@
+# 인덱서 테스트 입력 — 기본 언어(ko) 루트 서빙, 번들/플랫/draft/slug 오버라이드 혼합
+site:
+  baseURL: https://fixture.example.com
+  title: Fixture Blog
+  author: Fixture Author
+  default_lang_in_subdir: false
+
+languages: [ko, en]
+sections: [tech, opinion]
+
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }
+
+geo:
+  crawlers:
+    training: allow
+    search: allow
+    fetch: allow
+    bytespider: block
+
+deploy:
+  provider: s3-cloudfront

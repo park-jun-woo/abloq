@@ -1,0 +1,7 @@
+package service
+
+// @no-pagination
+// @auth "ListPosts" "post" {} "Forbidden" 403
+// @get []Post posts = Post.ListAll({})
+// @response { posts: posts }
+func ListPosts() {}

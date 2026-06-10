@@ -1,0 +1,24 @@
+# Hurl sync 시나리오 픽스처 저장소 — 발행 글 2편 → posts 2행
+site:
+  baseURL: https://fixture.example.com
+  title: Fixture Blog
+  author: Fixture Author
+  default_lang_in_subdir: false
+
+languages: [ko]
+sections: [tech]
+
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처" }
+
+geo:
+  crawlers:
+    training: allow
+    search: allow
+    fetch: allow
+    bytespider: block
+
+deploy:
+  provider: s3-cloudfront

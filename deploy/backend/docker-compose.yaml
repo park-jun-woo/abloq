@@ -1,0 +1,54 @@
+# abloqd 셀프호스트 한 장 — postgres + abloqd (Phase007 §작업 7)
+#
+# 사용:
+#   1. yongol generate backend/specs backend/arts   # arts는 일회용 projection
+#   2. deploy/backend/.env 에 자격증명 작성 (POSTGRES_PASSWORD, JWT_SECRET, BLOG_REPO_PATH)
+#   3. docker compose -f deploy/backend/docker-compose.yaml up -d --build
+#
+# blog.yaml ↔ manifest는 별개 SSOT(설계서 §10.3): abloqd는 마운트된 블로그
+# 저장소의 blog.yaml(BLOG_REPO_PATH/blog.yaml)을 읽어 언어·섹션·URL 계약과
+# geo 임계를 파라미터로 쓴다. blog.yaml은 이미지에 굽지 않고 저장소 마운트로
+# 따라 들어온다 — 저장소 경로·자격증명은 전부 env로만 주입한다.
+
+name: abloqd
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-abloqd}
+      POSTGRES_USER: ${POSTGRES_USER:-abloqd}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      # 최초 기동 시 스키마 적용 (이후 마이그레이션은 운영 절차로)
+      - ../../backend/arts/db/migrations/0001_initial.up.sql:/docker-entrypoint-initdb.d/0001_initial.up.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abloqd} -d ${POSTGRES_DB:-abloqd}"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+    restart: unless-stopped
+
+  abloqd:
+    build:
+      context: ../..
+      dockerfile: deploy/backend/Dockerfile
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-abloqd}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-abloqd}?sslmode=disable
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (>= 32 chars)}
+      # 컨테이너 안에서 블로그 저장소는 항상 /blog — blog.yaml도 여기서 읽는다
+      BLOG_REPO_PATH: /blog
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      GIN_MODE: release
+    volumes:
+      - ${BLOG_REPO_PATH:?BLOG_REPO_PATH is required (host path of the blog repository)}:/blog:ro
+    ports:
+      - "${ABLOQD_PORT:-8080}:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:
