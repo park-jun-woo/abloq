@@ -1,3 +1,10 @@
+# Smoke — covers every operationId once. Runtime env requirements:
+#   - archive stub (backend/scripts/archive-stub) + WAYBACK_/INDEXNOW_/GSC_*
+#     overrides (Phase008),
+#   - QUEUE_EXPORT_REPO_URL/QUEUE_EXPORT_WORKDIR pointing at a local bare
+#     repo (backend/scripts/queue-export-test/setup-bare.sh) — the export
+#     step pushes for real (Phase009).
+
 # Login rejects a wrong password
 POST {{host}}/auth/login
 Content-Type: application/json
@@ -73,3 +80,28 @@ Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.receipts" count == 3
+
+# ScanFreshness — both fixture posts exceed the 1-day threshold; the insert
+# itself is duplicate-free, so re-runs detect 2 and enqueue at most 2
+POST {{host}}/scans/freshness
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.detected" == 2
+
+# ListQueue — the refresh candidates are in the queue (any status: the
+# freshness scenario may already have exported them in a shared-DB run)
+GET {{host}}/queue?kind=refresh
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.items" count >= 2
+
+# ExportQueue — pushes open items to the bare repo (QUEUE_EXPORT_*);
+# a no-op when everything is already exported
+POST {{host}}/queue/export
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.exported" >= 0
+jsonpath "$.consumed" >= 0

@@ -1,0 +1,22 @@
+//ff:func feature=queueio type=parser control=iteration dimension=1
+//ff:what queue_items jsonb_agg JSON → []Row — payload의 section을 1급 필드로 승격, payload 사본에서 제거
+package queueio
+
+import "encoding/json"
+
+// DecodeRows parses the jsonb_agg scalar the queue queries return. Section is
+// lifted out of payload into the first-class field (the inverse of
+// EncodeRows); the payload map is copied so the section key does not leak
+// into the serialized file twice.
+func DecodeRows(data []byte) ([]Row, error) {
+	var raw []Row
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return nil, err
+	}
+	rows := make([]Row, 0, len(raw))
+	for _, r := range raw {
+		r.Section, r.Payload = liftSection(r.Payload)
+		rows = append(rows, r)
+	}
+	return rows, nil
+}

@@ -1,0 +1,11 @@
+package service
+
+// Operational queue lookup — priority order (DESC) so the cold-start
+// assertion (date-recency order when crawl_hits is empty) reads directly off
+// the response. Empty-string filters mean "no filter".
+
+// @no-pagination
+// @auth "ListQueue" "queue_item" {} "Forbidden" 403
+// @get []QueueItem items = QueueItem.ListFiltered({Kind: request.kind, Status: request.status})
+// @response { items: items }
+func ListQueue() {}

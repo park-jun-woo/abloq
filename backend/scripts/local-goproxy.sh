@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Build a file:// GOPROXY that serves the abloq working tree as
-# github.com/park-jun-woo/abloq@v0.0.1.
+# github.com/park-jun-woo/abloq@v0.0.3 (default — pass another tag as $1; bump on
+# every pkg/ change: the go module index caches same-version republish).
 #
 # Why: backend/specs/func/content/index_repo.go imports
 # github.com/park-jun-woo/abloq/pkg/content, and `yongol generate` runs
@@ -16,7 +17,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-VERSION="${1:-v0.0.1}"
+VERSION="${1:-v0.0.3}"
 PROXY="${ABLOQ_GOPROXY_DIR:-/tmp/abloq-goproxy}"
 MOD="github.com/park-jun-woo/abloq"
 VDIR="$PROXY/$MOD/@v"

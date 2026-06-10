@@ -29,6 +29,17 @@ components:
         target: { type: string }
         status: { type: string }
         created_at: { type: string, format: date-time }
+    QueueItem:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        kind: { type: string }
+        slug: { type: string }
+        lang: { type: string }
+        priority: { type: integer, format: int64 }
+        status: { type: string }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     Post:
       type: object
       properties:
@@ -242,6 +253,90 @@ paths:
                   receipts:
                     type: array
                     items: { $ref: '#/components/schemas/Receipt' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /scans/freshness:
+    post:
+      operationId: ScanFreshness
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detected: { type: integer, format: int64 }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /queue/export:
+    post:
+      operationId: ExportQueue
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  exported: { type: integer, format: int64 }
+                  consumed: { type: integer, format: int64 }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /queue:
+    get:
+      operationId: ListQueue
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: kind
+          in: query
+          required: false
+          schema: { type: string }
+        - name: status
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/QueueItem' }
         '403':
           description: Forbidden
           content:

@@ -1,0 +1,17 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/scan"
+
+// Freshness scanner — collects the posts index and the per-article crawl-hit
+// sums as JSON scalars, detects stale articles (geo.freshness_days from the
+// mounted blog.yaml) and batch-inserts refresh candidates. Duplicate
+// protection is the query's WHERE NOT EXISTS over (kind, slug, lang,
+// payload->>'section') against open|exported rows — SSaC stays branch-free.
+
+// @auth "ScanFreshness" "queue_item" {} "Forbidden" 403
+// @get string postsJson = Post.AggAllJson()
+// @get string hitsJson = CrawlHit.AggSumsJson()
+// @call FreshnessResponse cand = scan.Freshness({PostsJSON: postsJson, HitsJSON: hitsJson})
+// @put QueueItem.InsertMissingFromJson({ItemsJson: cand.ItemsJSON})
+// @response { detected: cand.Detected }
+func ScanFreshness() {}

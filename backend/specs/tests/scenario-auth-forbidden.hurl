@@ -55,3 +55,18 @@ HTTP 403
 GET {{host}}/receipts
 Authorization: Bearer {{viewer_token}}
 HTTP 403
+
+# ScanFreshness is forbidden for non-operators
+POST {{host}}/scans/freshness
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# ExportQueue is forbidden for non-operators
+POST {{host}}/queue/export
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# ListQueue is forbidden for non-operators
+GET {{host}}/queue
+Authorization: Bearer {{viewer_token}}
+HTTP 403

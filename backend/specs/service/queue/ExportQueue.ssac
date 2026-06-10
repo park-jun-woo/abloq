@@ -1,0 +1,19 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/queueio"
+
+// Queue exporter — the only backend→agent contact point (design §3.3). The
+// func pulls the dedicated work clone (QUEUE_EXPORT_*), syncs agent-deleted
+// files (exported → consumed), writes every open item's quests/queue file and
+// pushes. Status transitions run after the push so a failed export leaves
+// rows open for the next cycle; the UPDATE WHERE status guards preserve the
+// state-machine semantics until the Phase018 stateDiagram lands.
+
+// @auth "ExportQueue" "queue_item" {} "Forbidden" 403
+// @get string openJson = QueueItem.AggOpenJson()
+// @get string exportedJson = QueueItem.AggExportedJson()
+// @call ExportResponse res = queueio.Export({OpenJSON: openJson, ExportedJSON: exportedJson})
+// @put QueueItem.MarkExportedFromJson({IDSJson: res.ExportedIdsJSON})
+// @put QueueItem.MarkConsumedFromJson({IDSJson: res.ConsumedIdsJSON})
+// @response { exported: res.Exported, consumed: res.Consumed }
+func ExportQueue() {}

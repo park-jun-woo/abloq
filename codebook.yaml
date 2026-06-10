@@ -12,6 +12,9 @@ required:
     image: "이미지 도구 — OG 카드(1200×630) 생성과 WebP 변환, 순수 Go (외부 바이너리 없음)"
     claudemd: "CLAUDE.md 생성기 — blog.yaml에서 에이전트 운영 매뉴얼(게시 절차/게이트/금지사항) 렌더"
     content: "콘텐츠 인덱서 — 발행 글 front matter 전수 파싱 → 인덱스 항목(posts 1행 대응), CLI와 abloqd 백엔드가 공유 (Phase007)"
+    scan: "콘텐츠 스캐너 — freshness_days 초과 글 검출 → 우선순위 큐 후보, CLI와 abloqd 백엔드가 공유 (Phase009, Phase010·011 스캐너 합류)"
+    queueio: "큐 exporter 공통 모듈 — queue_items → quests/queue/*.yaml 결정적 직렬화 + 전용 작업 클론 커밋·푸시, 역방향 consumed 동기화 (Phase009, Phase010·011 재사용)"
+    visibility: "가시성 우선순위 — 글별 신호(crawl_hits 합계, date)를 큐 우선순위 점수로 환산 (Phase009 콜드스타트, Phase014 측정 기반 합류)"
   type:
     schema: "도메인 데이터 모델 — blog.yaml 스키마, 진단, 봇 UA, 발행 글, 산출물"
     parser: "파싱·수집 — strict YAML 디코드, front matter, 콘텐츠 스캔, 라인 인덱스"
@@ -22,6 +25,7 @@ required:
     dict: "정적 사전 데이터 제공과 조회"
     frame: "게이트 공통 프레임 — 타깃 조립, 룰 레지스트리, 실행기, 글 수집"
     client: "외부 API 클라이언트 — env 베이스 URL 오버라이드, 응답을 영수증으로 환원"
+    scorer: "우선순위 산출 — 같은 신호면 같은 점수(결정적), Scorer 인터페이스와 구현"
 
 optional:
   topic:

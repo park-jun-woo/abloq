@@ -43,3 +43,24 @@ allow if {
     input.resource == "receipt"
     input.claims.role == "operator"
 }
+
+# Operator-only: detect stale articles and enqueue refresh candidates
+allow if {
+    input.action == "ScanFreshness"
+    input.resource == "queue_item"
+    input.claims.role == "operator"
+}
+
+# Operator-only: export open queue items to the blog repository
+allow if {
+    input.action == "ExportQueue"
+    input.resource == "queue_item"
+    input.claims.role == "operator"
+}
+
+# Operator-only: list queue items (operational lookup)
+allow if {
+    input.action == "ListQueue"
+    input.resource == "queue_item"
+    input.claims.role == "operator"
+}

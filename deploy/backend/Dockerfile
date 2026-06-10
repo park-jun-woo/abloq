@@ -16,13 +16,22 @@ RUN go mod edit -replace github.com/park-jun-woo/abloq=/src \
     && CGO_ENABLED=0 go build -o /out/abloqd ./cmd
 
 FROM alpine:3.21
-# addgroup/adduser are busybox builtins; CA certs come from the builder image
-# so the runtime stage needs no package fetch at all.
-RUN addgroup -S abloqd && adduser -S abloqd -G abloqd
+# addgroup/adduser are busybox builtins; CA certs come from the builder image.
+# git + openssh-client are required at runtime by the queue exporter
+# (Phase009): pkg/queueio shells out to git for the work-clone pull → commit →
+# deploy-key push cycle — without them Hurl (host-run) passes but production
+# dies on the first POST /queue/export.
+RUN apk add --no-cache git openssh-client \
+    && addgroup -S abloqd && adduser -S abloqd -G abloqd \
+    # exporter work clone home — the only writable path abloqd needs. The
+    # directory exists in the image so the compose named volume inherits
+    # abloqd ownership on first use.
+    && mkdir -p /var/lib/abloqd/queue-export && chown -R abloqd:abloqd /var/lib/abloqd
 COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 COPY --from=build /out/abloqd /usr/local/bin/abloqd
 COPY backend/arts/backend/policy /etc/abloqd/policy
 USER abloqd
 EXPOSE 8080
 ENV OPA_POLICY_PATH=/etc/abloqd/policy/authz.rego
+ENV QUEUE_EXPORT_WORKDIR=/var/lib/abloqd/queue-export
 ENTRYPOINT ["/usr/local/bin/abloqd"]

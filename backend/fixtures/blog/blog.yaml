@@ -14,6 +14,9 @@ structure:
     sources: { ko: "출처" }
 
 geo:
+  # 1-day threshold so the fixture posts (lastmod 2026-06-0x) read as stale —
+  # the freshness scanner scenario needs detectable candidates.
+  freshness_days: 1
   crawlers:
     training: allow
     search: allow

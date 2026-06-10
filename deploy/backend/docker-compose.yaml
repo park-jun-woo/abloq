@@ -62,10 +62,30 @@ services:
       GSC_DAILY_QUOTA: ${GSC_DAILY_QUOTA:-200}
       WAYBACK_ACCESS_KEY: ${WAYBACK_ACCESS_KEY:-}
       WAYBACK_SECRET_KEY: ${WAYBACK_SECRET_KEY:-}
+      # 큐 exporter (Phase009) — /blog 마운트는 ro 인덱싱 전용이고 그대로 둔다.
+      # 쓰기는 전용 작업 클론(QUEUE_EXPORT_WORKDIR, 이미지 기본
+      # /var/lib/abloqd/queue-export)에서만: REPO_URL을 pull → quests/queue/
+      # 기록 → 커밋 → deploy key 푸시. REPO_URL이 비면 POST /queue/export가
+      # 500을 반환할 뿐 다른 모듈은 영향 없다.
+      QUEUE_EXPORT_REPO_URL: ${QUEUE_EXPORT_REPO_URL:-}
+      QUEUE_EXPORT_AUTHOR: ${QUEUE_EXPORT_AUTHOR:-abloqd-bot}
+      QUEUE_EXPORT_AUTHOR_EMAIL: ${QUEUE_EXPORT_AUTHOR_EMAIL:-abloqd-bot@abloq.local}
+      # deploy key + known_hosts — git push가 ssh로 나갈 때만 쓰인다
+      # (file:// 테스트 origin은 ssh를 타지 않는다).
+      GIT_SSH_COMMAND: >-
+        ssh -i /etc/abloqd/queue-deploy-key
+        -o UserKnownHostsFile=/etc/abloqd/known_hosts
+        -o IdentitiesOnly=yes
     volumes:
       - ${BLOG_REPO_PATH:?BLOG_REPO_PATH is required (host path of the blog repository)}:/blog:ro
       # GSC 서비스 계정 JSON (없으면 /dev/null — gsc_index 영수증이 failed로 남는다)
       - ${GSC_SA_JSON_FILE:-/dev/null}:/etc/abloqd/gsc-sa.json:ro
+      # 큐 exporter deploy key(쓰기 권한)와 known_hosts (없으면 /dev/null —
+      # ssh origin 푸시가 실패할 뿐 file:// origin은 무관)
+      - ${QUEUE_DEPLOY_KEY_FILE:-/dev/null}:/etc/abloqd/queue-deploy-key:ro
+      - ${QUEUE_KNOWN_HOSTS_FILE:-/dev/null}:/etc/abloqd/known_hosts:ro
+      # 작업 클론 영속 볼륨 — 재시작마다 전체 클론을 다시 받지 않는다
+      - queue-export:/var/lib/abloqd/queue-export
     ports:
       - "${ABLOQD_PORT:-8080}:8080"
     restart: unless-stopped
@@ -111,3 +131,4 @@ services:
 
 volumes:
   pgdata:
+  queue-export:

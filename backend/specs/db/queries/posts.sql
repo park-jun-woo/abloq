@@ -40,3 +40,15 @@ ON CONFLICT (lang, section, slug) DO UPDATE SET
 -- +no-pagination
 -- +allow-sensitive
 SELECT * FROM posts ORDER BY lang, section, slug;
+
+-- name: PostAggAllJson :one
+-- The posts index as a JSON text scalar for the freshness scanner func —
+-- field names mirror pkg/content.Entry JSON tags. Empty set must be '[]'.
+SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'lang', lang,
+           'section', section,
+           'slug', slug,
+           'date', "date",
+           'lastmod', lastmod
+       ) ORDER BY lang, section, slug), '[]'::jsonb)::text
+FROM posts;
