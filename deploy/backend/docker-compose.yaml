@@ -33,6 +33,7 @@ services:
       - pgdata:/var/lib/postgresql/data
       # 최초 기동 시 스키마 적용 (이후 마이그레이션은 운영 절차로)
       - ../../backend/arts/db/migrations/0001_initial.up.sql:/docker-entrypoint-initdb.d/0001_initial.up.sql:ro
+      - ../../backend/arts/db/migrations/0002_create_ingest_cursors_and_more.up.sql:/docker-entrypoint-initdb.d/0002_create_ingest_cursors_and_more.up.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abloqd} -d ${POSTGRES_DB:-abloqd}"]
       interval: 5s
@@ -70,6 +71,17 @@ services:
       QUEUE_EXPORT_REPO_URL: ${QUEUE_EXPORT_REPO_URL:-}
       QUEUE_EXPORT_AUTHOR: ${QUEUE_EXPORT_AUTHOR:-abloqd-bot}
       QUEUE_EXPORT_AUTHOR_EMAIL: ${QUEUE_EXPORT_AUTHOR_EMAIL:-abloqd-bot@abloq.local}
+      # 크롤 수집 (Phase012) — CF 로그 → crawl_hits. CF_LOG_SOURCE는 로컬
+      # 디렉토리 또는 s3://bucket/prefix (비면 POST /ingest/crawl이 500을
+      # 반환할 뿐 다른 모듈은 영향 없다). S3면 AWS_* 자격 env 필요 — 설계서
+      # §3.3, 자격증명은 전부 백엔드에만. 커서는 닫힌 시간대 경계 단위:
+      # CF 배달 지연(드물게 24h)이 의심되면 CF_LOG_MARGIN_HOURS를 올린다.
+      CF_LOG_SOURCE: ${CF_LOG_SOURCE:-}
+      CF_LOG_MARGIN_HOURS: ${CF_LOG_MARGIN_HOURS:-2}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_SESSION_TOKEN: ${AWS_SESSION_TOKEN:-}
+      AWS_REGION: ${AWS_REGION:-}
       # deploy key + known_hosts — git push가 ssh로 나갈 때만 쓰인다
       # (file:// 테스트 origin은 ssh를 타지 않는다).
       GIT_SSH_COMMAND: >-
@@ -126,6 +138,40 @@ services:
             -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
             -d "{\"limit\":$$BACKSTOP_PROCESS_LIMIT}" >/dev/null \
             || echo "backstop: process failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 크롤 수집 cron (Phase012, 권고 일간) — CF 로그 → crawl_hits. 아카이버
+  # 백스톱 선례: 시크릿은 operator 자격증명, 매 주기 login으로 토큰 발급.
+  # 멱등 — 커서가 닫힌 시간대만 전진하므로 재실행해도 이중 누적이 없다.
+  # 재집계가 필요하면 커서 리셋과 해당 구간 crawl_hits DELETE를 반드시 한
+  # 동작으로 (수동 SQL — backend/specs/db/ingest_cursors.sql 주석 참조).
+  # 켜기: docker compose --profile crawl up -d
+  crawl-ingest:
+    image: alpine:3.21
+    profiles: ["crawl"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the crawl ingest cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the crawl ingest cron}
+      CRAWL_PERIOD_SECONDS: ${CRAWL_PERIOD_SECONDS:-86400}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$CRAWL_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "crawl: login failed"; continue; }
+          # ② ingest — 닫힌 시간대 증분 수집 (멱등)
+          curl -sf -m 600 -X POST http://abloqd:8080/ingest/crawl \
+            -H "Authorization: Bearer $$TOKEN" >/dev/null \
+            || echo "crawl: ingest failed (next cycle retries)"
         done
     restart: unless-stopped
 

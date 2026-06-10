@@ -7,6 +7,7 @@ CREATE TABLE crawl_hits (
     section TEXT NOT NULL,
     slug TEXT NOT NULL,
     hits BIGINT NOT NULL DEFAULT 0,
+    md_hits BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 

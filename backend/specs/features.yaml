@@ -4,6 +4,8 @@ tables:
   receipts: {}
   queue_items: {}
   crawl_hits: {}
+  ingest_cursors: {}
+  unknown_bots: {}
   gsc_snapshots: {}
   citation_queries:
     has_many:
@@ -74,3 +76,13 @@ features:
     path: GET /queue
     desc: List queue items filtered by kind and status
     table: queue_items
+
+  - op: IngestCrawl
+    path: POST /ingest/crawl
+    desc: Aggregate AI-bot hits from CloudFront logs into crawl_hits (closed-hour cursor, idempotent re-ingest)
+    table: crawl_hits
+
+  - op: ListCrawlHits
+    path: GET /crawl-hits
+    desc: List aggregated crawl hits filtered by lang, section, slug and hit_date range
+    table: crawl_hits

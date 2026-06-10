@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what abloq 루트 cobra 명령 생성 — 서브커맨드(validate/generate/check/gate/init/postbuild/image/claudemd/archive/scan) 등록
+//ff:what abloq 루트 cobra 명령 생성 — 서브커맨드(validate/generate/check/gate/init/postbuild/image/claudemd/archive/scan/ingest) 등록
 package main
 
 import "github.com/spf13/cobra"
@@ -23,5 +23,6 @@ func newRootCmd() *cobra.Command {
 	cmd.AddCommand(newClaudeMDCmd())
 	cmd.AddCommand(newArchiveCmd())
 	cmd.AddCommand(newScanCmd())
+	cmd.AddCommand(newIngestCmd())
 	return cmd
 }

@@ -78,3 +78,17 @@ allow if {
     input.resource == "queue_item"
     input.claims.role == "operator"
 }
+
+# Operator-only: aggregate CloudFront logs into crawl_hits (daily cron)
+allow if {
+    input.action == "IngestCrawl"
+    input.resource == "crawl_hit"
+    input.claims.role == "operator"
+}
+
+# Operator-only: list aggregated crawl hits (reports and scanners)
+allow if {
+    input.action == "ListCrawlHits"
+    input.resource == "crawl_hit"
+    input.claims.role == "operator"
+}

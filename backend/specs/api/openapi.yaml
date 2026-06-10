@@ -56,6 +56,18 @@ components:
         url: { type: string }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    CrawlHit:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        hit_date: { type: string, format: date-time }
+        bot: { type: string }
+        lang: { type: string }
+        section: { type: string }
+        slug: { type: string }
+        hits: { type: integer, format: int64 }
+        md_hits: { type: integer, format: int64 }
+        created_at: { type: string, format: date-time }
 paths:
   /auth/login:
     post:
@@ -385,6 +397,78 @@ paths:
                   items:
                     type: array
                     items: { $ref: '#/components/schemas/QueueItem' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /ingest/crawl:
+    post:
+      operationId: IngestCrawl
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  files: { type: integer, format: int64 }
+                  hits: { type: integer, format: int64 }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /crawl-hits:
+    get:
+      operationId: ListCrawlHits
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: lang
+          in: query
+          required: false
+          schema: { type: string }
+        - name: section
+          in: query
+          required: false
+          schema: { type: string }
+        - name: slug
+          in: query
+          required: false
+          schema: { type: string }
+        - name: from_date
+          in: query
+          required: false
+          schema: { type: string }
+        - name: to_date
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  hits:
+                    type: array
+                    items: { $ref: '#/components/schemas/CrawlHit' }
         '403':
           description: Forbidden
           content:

@@ -3,7 +3,8 @@
 #     overrides (Phase008),
 #   - QUEUE_EXPORT_REPO_URL/QUEUE_EXPORT_WORKDIR pointing at a local bare
 #     repo (backend/scripts/queue-export-test/setup-bare.sh) — the export
-#     step pushes for real (Phase009).
+#     step pushes for real (Phase009),
+#   - CF_LOG_SOURCE pointing at backend/fixtures/cflogs (Phase012).
 
 # Login rejects a wrong password
 POST {{host}}/auth/login
@@ -123,3 +124,20 @@ HTTP 200
 [Asserts]
 jsonpath "$.exported" >= 0
 jsonpath "$.consumed" >= 0
+
+# IngestCrawl — re-run after the crawl scenario already advanced the cursor
+# (CF_LOG_SOURCE fixture logs): a no-op on the shared DB, a full ingest on a
+# fresh one (the exact-count oracle lives in scenario-crawl.hurl)
+POST {{host}}/ingest/crawl
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.files" >= 0
+jsonpath "$.hits" >= 0
+
+# ListCrawlHits — the fixture log hits are aggregated per article
+GET {{host}}/crawl-hits
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.hits" count >= 0

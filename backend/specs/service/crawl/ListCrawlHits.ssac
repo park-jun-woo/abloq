@@ -1,0 +1,10 @@
+package service
+
+// Crawl-hit lookup for reports and scanners. Empty-string filters mean "no
+// filter"; from/to bound hit_date inclusively (UTC dates, "2006-01-02").
+
+// @no-pagination
+// @auth "ListCrawlHits" "crawl_hit" {} "Forbidden" 403
+// @get []CrawlHit hits = CrawlHit.ListFiltered({Lang: request.lang, Section: request.section, Slug: request.slug, FromDate: request.from_date, ToDate: request.to_date})
+// @response { hits: hits }
+func ListCrawlHits() {}

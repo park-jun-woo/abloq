@@ -80,3 +80,13 @@ HTTP 403
 GET {{host}}/queue
 Authorization: Bearer {{viewer_token}}
 HTTP 403
+
+# IngestCrawl is forbidden for non-operators
+POST {{host}}/ingest/crawl
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
+# ListCrawlHits is forbidden for non-operators
+GET {{host}}/crawl-hits
+Authorization: Bearer {{viewer_token}}
+HTTP 403
