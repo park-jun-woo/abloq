@@ -17,6 +17,7 @@ func TestRuleFrontMatterSchema(t *testing.T) {
 		{"fail lastmod precedes date", "articles/schema-lastmod-before.md", 1, "must not precede"},
 		{"fail no front matter", "articles/no-fm.md", 1, "missing or malformed"},
 		{"fail broken yaml", "articles/schema-broken-yaml.md", 1, "not valid YAML"},
+		{"pass special layout page skipped", "articles/special-layout.md", 0, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

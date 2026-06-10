@@ -21,7 +21,7 @@ func Render(b *blogyaml.Blog, posts []Post) []byte {
 			group = g
 			fmt.Fprintf(&sb, "\n## %s\n\n", group)
 		}
-		sb.WriteString(postLine(b.Site.BaseURL, p) + "\n")
+		sb.WriteString(postLine(b, p) + "\n")
 	}
 	return []byte(sb.String())
 }

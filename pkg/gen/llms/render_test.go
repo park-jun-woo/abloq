@@ -10,7 +10,7 @@ import (
 
 func TestRender(t *testing.T) {
 	b := &blogyaml.Blog{
-		Site:      blogyaml.Site{BaseURL: "https://x.com", Title: "X Blog", Author: "A"},
+		Site:      blogyaml.Site{BaseURL: "https://x.com", Title: "X Blog", Author: "A", DefaultLangInSubdir: true},
 		Languages: []string{"ko", "en"},
 		Sections:  []string{"opinion"},
 	}

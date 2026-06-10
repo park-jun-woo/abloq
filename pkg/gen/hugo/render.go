@@ -23,7 +23,7 @@ func Render(b *blogyaml.Blog) []byte {
 	fmt.Fprintf(&sb, "baseURL = %s\n", strconv.Quote(b.Site.BaseURL))
 	fmt.Fprintf(&sb, "title = %s\n", strconv.Quote(b.Site.Title))
 	fmt.Fprintf(&sb, "defaultContentLanguage = %s\n", strconv.Quote(defaultLang))
-	sb.WriteString("defaultContentLanguageInSubdir = true\n")
+	fmt.Fprintf(&sb, "defaultContentLanguageInSubdir = %t\n", b.Site.DefaultLangInSubdir)
 	sb.WriteString("enableRobotsTXT = false\n")
 	sb.WriteString("\n[params]\n")
 	fmt.Fprintf(&sb, "author = %s\n", strconv.Quote(b.Site.Author))

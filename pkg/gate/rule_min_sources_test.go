@@ -13,6 +13,7 @@ func TestRuleMinSources(t *testing.T) {
 		{"pass two sources", "evidence/sources-ok.md", 0, ""},
 		{"fail empty section", "evidence/sources-empty.md", 1, "lists 0 source(s)"},
 		{"fail missing section", "evidence/sources-missing.md", 1, "sources section missing"},
+		{"pass special layout page skipped", "articles/special-layout.md", 0, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

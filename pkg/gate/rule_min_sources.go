@@ -18,6 +18,9 @@ func ruleMinSources(t *Target) []blogyaml.Diagnostic {
 	}
 	var diags []blogyaml.Diagnostic
 	for _, a := range t.Articles {
+		if special(a) {
+			continue
+		}
 		n, head, found := sourceCount(a.Doc)
 		if found && n >= min {
 			continue

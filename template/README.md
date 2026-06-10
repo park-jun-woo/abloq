@@ -15,6 +15,16 @@
 - `files/deploy/terraform` — S3+CloudFront(+옵션 WAF·CF 로그 버킷·IndexNow
   키 배치) IaC. 모듈 단위 토글.
 
+## Hugo 설정 확장 (config/_default 오버레이)
+
+루트 `hugo.toml`은 `abloq generate` 생성물이라 직접 수정하면 `abloq check`가
+드리프트로 잡는다. blog.yaml v1이 다루지 않는 인스턴스 전용 설정(언어별
+title/params/menus, pagination, taxonomies, markup 등)은 `config/_default/`
+디렉토리에 둔다 — Hugo가 루트 설정 위에 병합하며, 생성물은 바이트 그대로
+남는다. 단, blog.yaml이 이미 내는 키(baseURL, title, defaultContentLanguage*,
+[sitemap], languages.*.weight/contentDir)는 오버레이에 재선언하지 않는다 —
+SSOT가 둘이 되면 드리프트를 못 잡는다. (Phase006 도그푸드에서 확립)
+
 ## 레이아웃 정책 (설계서 §9 일반화의 늪 방어)
 
 **레이아웃은 교체 가능하나 지원하지 않는다.** 게이트와 생성기는 blog.yaml,

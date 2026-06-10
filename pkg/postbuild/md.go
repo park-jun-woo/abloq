@@ -5,12 +5,15 @@ package postbuild
 import (
 	"os"
 	"path/filepath"
+
+	"github.com/park-jun-woo/abloq/pkg/blogyaml"
 )
 
 // MD writes a clean .md beside every built article: dir/content/... sources
-// become dir/public/{lang}/{section}/{slug}.md (AI context format). It is
+// become dir/public/{lang}/{section}/{slug}.md (AI context format; a
+// root-served default language drops its language directory). It is
 // idempotent — same inputs rewrite the same bytes.
-func MD(dir string) (int, error) {
+func MD(dir string, b *blogyaml.Blog) (int, error) {
 	contentDir := filepath.Join(dir, "content")
 	publicDir := filepath.Join(dir, "public")
 	posts, err := CollectPosts(contentDir)
@@ -22,7 +25,7 @@ func MD(dir string) (int, error) {
 		if err != nil {
 			return i, err
 		}
-		dest := DestPath(contentDir, publicDir, src)
+		dest := DestPath(contentDir, publicDir, src, b)
 		if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
 			return i, err
 		}

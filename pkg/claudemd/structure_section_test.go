@@ -14,6 +14,9 @@ func TestStructureSection(t *testing.T) {
 		"| sources | 출처 | Sources |",
 		"`title`",
 		"`lastmod`",
+		"본문에 H1(`#`)을 쓰지 않는다",
+		"`summary`",
+		"미래 날짜 글을 빌드하지 않는다",
 		"min_sources=1 · min_internal_links=2 · freshness_days=90 · min_meaningful_diff=10",
 	}
 	for _, w := range wants {

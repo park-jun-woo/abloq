@@ -20,6 +20,7 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `site.baseURL` | string | ✅ | — | 절대 http(s) URL, query/fragment 금지 |
 | `site.title` | string | | — | 사이트 제목 |
 | `site.author` | string | | — | 저자명 |
+| `site.default_lang_in_subdir` | bool | | `true` | `false`면 기본 언어를 사이트 루트(`/...`)에 서빙 — hugo `defaultContentLanguageInSubdir`, llms.txt URL, hreflang 페이지 경로, `.md` 병행 서빙 경로가 함께 따른다 |
 | `languages` | [string] | ✅ | — | BCP-47 언어 코드. **첫 항목 = 기본 언어** |
 | `sections` | [string] | ✅ | — | 디렉토리 기반 섹션 (1개 이상) |
 | `structure.order` | [string] | | — | 글의 정규 섹션 순서 = 구조 게이트 룰의 입력 |

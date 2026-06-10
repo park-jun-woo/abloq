@@ -7,6 +7,9 @@ package blogyaml
 // Decoding blog.yaml over this value leaves absent keys at their defaults.
 func defaultBlog() Blog {
 	return Blog{
+		Site: Site{
+			DefaultLangInSubdir: true,
+		},
 		Geo: Geo{
 			LlmsTxt:           "auto",
 			JSONLD:            []string{"Article", "Person"},

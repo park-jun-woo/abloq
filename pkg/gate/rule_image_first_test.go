@@ -14,6 +14,7 @@ func TestRuleImageFirst(t *testing.T) {
 		{"pass minimal", "articles/pass-minimal.md", 0, ""},
 		{"fail text first", "articles/no-image.md", 1, "first content line"},
 		{"fail image later", "articles/image-later.md", 1, "first content line"},
+		{"pass special layout page skipped", "articles/special-layout.md", 0, ""},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

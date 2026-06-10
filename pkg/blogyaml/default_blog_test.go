@@ -1,5 +1,5 @@
 //ff:func feature=blogyaml type=parser control=sequence
-//ff:what defaultBlog가 스키마 v1 기본값(geo 임계값/llms_txt/jsonld/deploy)을 채우는지 검증
+//ff:what defaultBlog가 스키마 v1 기본값(site 서브디렉토리/geo 임계값/llms_txt/jsonld/deploy)을 채우는지 검증
 package blogyaml
 
 import (
@@ -9,6 +9,9 @@ import (
 
 func TestDefaultBlog(t *testing.T) {
 	b := defaultBlog()
+	if !b.Site.DefaultLangInSubdir {
+		t.Errorf("want default_lang_in_subdir true by default")
+	}
 	if b.Geo.LlmsTxt != "auto" {
 		t.Errorf("want llms_txt auto, got %q", b.Geo.LlmsTxt)
 	}

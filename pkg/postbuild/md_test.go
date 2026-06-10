@@ -6,9 +6,13 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/park-jun-woo/abloq/pkg/blogyaml"
 )
 
 func TestMD(t *testing.T) {
+	b := &blogyaml.Blog{Languages: []string{"ko"}}
+	b.Site.DefaultLangInSubdir = true
 	dir := t.TempDir()
 	post := filepath.Join(dir, "content", "ko", "tech", "hello.md")
 	if err := os.MkdirAll(filepath.Dir(post), 0o755); err != nil {
@@ -18,7 +22,7 @@ func TestMD(t *testing.T) {
 	if err := os.WriteFile(post, []byte(src), 0o644); err != nil {
 		t.Fatalf("write post: %v", err)
 	}
-	n, err := MD(dir)
+	n, err := MD(dir, b)
 	if err != nil || n != 1 {
 		t.Fatalf("MD = %d, %v; want 1, nil", n, err)
 	}
@@ -26,7 +30,7 @@ func TestMD(t *testing.T) {
 	if err != nil || string(got) != "# 안녕\n\n본문.\n" {
 		t.Errorf("served md = %q, err %v", got, err)
 	}
-	if n, err := MD(dir); err != nil || n != 1 {
+	if n, err := MD(dir, b); err != nil || n != 1 {
 		t.Errorf("second MD = %d, %v; want 1, nil", n, err)
 	}
 	blocked := t.TempDir()
@@ -40,7 +44,7 @@ func TestMD(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(blocked, "public"), []byte(""), 0o644); err != nil {
 		t.Fatalf("write public file: %v", err)
 	}
-	if _, err := MD(blocked); err == nil {
+	if _, err := MD(blocked, b); err == nil {
 		t.Error("MD with public/ blocked by a regular file expected error, got nil")
 	}
 }

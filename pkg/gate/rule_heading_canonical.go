@@ -9,10 +9,11 @@ import (
 )
 
 // ruleHeadingCanonical flags section names found at a non-## heading level.
+// Layout-owned special pages are exempt (see special).
 func ruleHeadingCanonical(t *Target) []blogyaml.Diagnostic {
 	var diags []blogyaml.Diagnostic
 	for _, a := range t.Articles {
-		if len(a.Doc.BadLevel) == 0 {
+		if len(a.Doc.BadLevel) == 0 || special(a) {
 			continue
 		}
 		h := a.Doc.BadLevel[0]

@@ -11,7 +11,7 @@ import (
 
 func TestRender(t *testing.T) {
 	b := &blogyaml.Blog{
-		Site:      blogyaml.Site{BaseURL: "https://x.example.com", Title: "X", Author: "A"},
+		Site:      blogyaml.Site{BaseURL: "https://x.example.com", Title: "X", Author: "A", DefaultLangInSubdir: true},
 		Languages: []string{"ko", "en"},
 		Sections:  []string{"opinion"},
 	}
@@ -36,5 +36,9 @@ func TestRender(t *testing.T) {
 	}
 	if strings.Contains(out, "[permalinks]") {
 		t.Errorf("hugo.toml must not declare [permalinks] (default path URLs = slug contract), got:\n%s", out)
+	}
+	b.Site.DefaultLangInSubdir = false
+	if root := string(Render(b)); !strings.Contains(root, "defaultContentLanguageInSubdir = false") {
+		t.Errorf("want defaultContentLanguageInSubdir = false for root-served default lang, got:\n%s", root)
 	}
 }

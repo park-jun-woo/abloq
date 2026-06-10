@@ -19,7 +19,7 @@ func ruleHreflangComplete(t *Target) []blogyaml.Diagnostic {
 	sibs := siblingLangs(t.Articles)
 	var diags []blogyaml.Diagnostic
 	for _, a := range t.Articles {
-		diags = append(diags, hreflangDiags(t.Dir, a, sibs[a.Section+"/"+a.Slug])...)
+		diags = append(diags, hreflangDiags(t.Dir, t.Blog, a, sibs[a.Section+"/"+a.Slug])...)
 	}
 	return diags
 }

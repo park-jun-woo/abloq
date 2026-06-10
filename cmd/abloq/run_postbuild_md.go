@@ -11,7 +11,11 @@ import (
 
 // runPostbuildMD writes the parallel .md files and reports the count.
 func runPostbuildMD(out io.Writer, dir string) error {
-	n, err := postbuild.MD(dir)
+	b, err := loadValidBlog(out, dir)
+	if err != nil {
+		return err
+	}
+	n, err := postbuild.MD(dir, b)
 	if err != nil {
 		return err
 	}

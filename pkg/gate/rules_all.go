@@ -19,7 +19,7 @@ func Rules() []Rule {
 		{ID: "honest-lastmod", Desc: "lastmod updates require a meaningful body diff (and queue membership)", Check: ruleHonestLastmod},
 		{ID: "hreflang-complete", Desc: "built pages cross-reference every language version via hreflang", Check: ruleHreflangComplete},
 		{ID: "min-sources", Desc: "the sources section lists at least geo.min_sources entries", Check: ruleMinSources},
-		{ID: "numeric-claim-sourced", Desc: "every numeric claim carries a source link in its paragraph", Check: ruleNumericClaimSourced},
+		{ID: "numeric-claim-sourced", Desc: "every numeric claim added since git HEAD carries a source link in its paragraph", Check: ruleNumericClaimSourced},
 		{ID: "citation-exists", Desc: "new citation URLs answer HTTP 200 and match the cited title (skipped offline)", Check: ruleCitationExists},
 	}
 }

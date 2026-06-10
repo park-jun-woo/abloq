@@ -11,6 +11,7 @@ func dirsSection() string {
 - ` + "`content/{lang}/{section}/{slug}.md`" + ` — 글. 전 언어 동일 slug(영문 소문자-하이픈 파일명).
 - ` + "`layouts/ assets/ static/`" + ` — 레이아웃 팩. 수정 자유, 게이트와 무관. 소셜 링크·홈 배너는 ` + "`layouts/partials/hooks/`" + `.
 - ` + "`hugo.toml` · `static/robots.txt` · `static/llms.txt` · `data/jsonld.json`" + ` — **생성물. 직접 수정 금지.** ` + "`abloq generate`" + `가 만들고 ` + "`abloq check`" + `가 드리프트를 잡는다.
+- ` + "`config/_default/`" + ` — 인스턴스 전용 Hugo 설정 오버레이(선택, 사람 소유). Hugo가 생성된 hugo.toml 위에 병합한다. blog.yaml이 이미 내는 키(baseURL·title·defaultContentLanguage*·[sitemap]·languages.*.weight/contentDir)는 재선언 금지.
 - ` + "`public/`" + ` — hugo 빌드 출력. 커밋하지 않는다.
 - ` + "`quests/queue/`" + ` — 운용 백엔드가 떨어뜨린 작업 큐(yaml). 갱신·근거 보강·클러스터 퀘스트의 유일한 입력.
 - ` + "`deploy/terraform/`" + ` — 배포 IaC(옵션). 적용은 사람이 결정한다.

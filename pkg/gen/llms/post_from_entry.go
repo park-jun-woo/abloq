@@ -37,5 +37,9 @@ func postFromEntry(sectionDir, lang, section string, entry os.DirEntry) (Post, b
 	if title == "" {
 		title = slug
 	}
-	return Post{Lang: lang, Section: section, Slug: slug, Title: title, Date: fm.Date, Description: fm.Description}, true
+	desc := fm.Description
+	if desc == "" {
+		desc = fm.Summary
+	}
+	return Post{Lang: lang, Section: section, Slug: slug, Title: title, Date: fm.Date, Description: desc}, true
 }

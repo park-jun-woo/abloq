@@ -3,6 +3,7 @@
 package llms
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 )
@@ -33,4 +34,22 @@ func TestPostFromEntry(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.entryName, func(t *testing.T) { checkPostFromEntry(t, dir, tc.entryName, tc.wantOK, tc.wantSlug, tc.wantTitle) })
 	}
+	t.Run("summary fallback", func(t *testing.T) {
+		writeFile(t, filepath.Join(dir, "summarized.md"), "---\ntitle: S\nsummary: \"한 줄 요약\"\n---\nbody\n")
+		entries, err := os.ReadDir(dir)
+		if err != nil {
+			t.Fatalf("ReadDir: %v", err)
+		}
+		for _, entry := range entries {
+			if entry.Name() != "summarized.md" {
+				continue
+			}
+			p, ok := postFromEntry(dir, "ko", "opinion", entry)
+			if !ok || p.Description != "한 줄 요약" {
+				t.Errorf("want summary as description, got ok=%v desc=%q", ok, p.Description)
+			}
+			return
+		}
+		t.Fatal("summarized.md not found")
+	})
 }
