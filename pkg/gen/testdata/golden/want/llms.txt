@@ -1,0 +1,16 @@
+# Golden Blog
+
+> Gold Author — https://golden.example.com
+
+## ko/opinion
+
+- [새 글](https://golden.example.com/ko/opinion/newer/): 최신 의견 글
+- [첫 글](https://golden.example.com/ko/opinion/first-post/)
+
+## ko/tech
+
+- [번들 글](https://golden.example.com/ko/tech/bundle-post/)
+
+## en/opinion
+
+- [First Post](https://golden.example.com/en/opinion/first-post/): English first post

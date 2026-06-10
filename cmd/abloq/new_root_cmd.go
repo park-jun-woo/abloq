@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what abloq 루트 cobra 명령 생성 — 서브커맨드(validate) 등록
+//ff:what abloq 루트 cobra 명령 생성 — 서브커맨드(validate/generate/check) 등록
 package main
 
 import "github.com/spf13/cobra"
@@ -14,5 +14,7 @@ func newRootCmd() *cobra.Command {
 		SilenceErrors: true,
 	}
 	cmd.AddCommand(newValidateCmd())
+	cmd.AddCommand(newGenerateCmd())
+	cmd.AddCommand(newCheckCmd())
 	return cmd
 }

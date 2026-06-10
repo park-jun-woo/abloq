@@ -1,0 +1,12 @@
+{
+  "types": [
+    "Article",
+    "Person"
+  ],
+  "author": {
+    "@type": "Person",
+    "name": "Gold Author",
+    "url": "https://golden.example.com"
+  },
+  "publisher": "Golden Blog"
+}

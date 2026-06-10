@@ -1,0 +1,23 @@
+# 골든 테스트 입력 — 2개 언어, 2개 섹션, 표준 crawlers 정책
+site:
+  baseURL: https://golden.example.com
+  title: Golden Blog
+  author: Gold Author
+
+languages: [ko, en]
+sections: [opinion, tech]
+
+structure:
+  order: [body, sources]
+  headings:
+    sources: { ko: "출처", en: "Sources" }
+
+geo:
+  crawlers:
+    training: allow
+    search: allow
+    fetch: allow
+    bytespider: block
+
+deploy:
+  provider: s3-cloudfront
