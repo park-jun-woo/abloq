@@ -1,0 +1,15 @@
+{{ define "main" }}
+<section class="home">
+  <h1 class="sr-only">{{ .Site.Title }}</h1>
+  {{- partial "hooks/home-banner.html" . -}}
+  {{ range site.Home.Sections }}
+  <div class="home-category">
+    <h2><a href="{{ .RelPermalink }}">{{ .Title }}</a></h2>
+    {{ with .Params.summary }}<p class="home-category-desc">{{ . }}</p>{{ end }}
+    {{ range first 3 .RegularPages.ByDate.Reverse }}
+    {{- partial "post-card.html" (dict "page" . "current" "") -}}
+    {{ end }}
+  </div>
+  {{ end }}
+</section>
+{{ end }}

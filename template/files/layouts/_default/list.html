@@ -1,0 +1,11 @@
+{{ define "main" }}
+<section class="list">
+  <h1>{{ .Title }}</h1>
+  {{ .Content }}
+  <div class="post-cards">
+    {{ range .RegularPages.ByDate.Reverse }}
+    {{- partial "post-card.html" (dict "page" . "current" "") -}}
+    {{ end }}
+  </div>
+</section>
+{{ end }}

@@ -1,0 +1,9 @@
+<footer>
+  <p>&copy; {{ now.Year }} {{ .Site.Params.author | default .Site.Title }}{{ with .Site.Params.license }} · <a href="{{ .url }}" target="_blank" rel="noopener">{{ .name }}</a>{{ else }} · <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noopener">CC BY 4.0</a>{{ end }}</p>
+  <div class="footer-links">
+    {{ with .OutputFormats.Get "RSS" }}<a href="{{ .RelPermalink }}">RSS</a>{{ end }}
+    {{ range site.Home.AllTranslations }}
+    <a href="{{ .Permalink }}" hreflang="{{ .Lang }}"{{ if eq .Lang $.Lang }} class="current"{{ end }}>{{ .Language.LanguageName | default .Lang }}</a>
+    {{ end }}
+  </div>
+</footer>

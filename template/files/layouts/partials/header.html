@@ -1,0 +1,33 @@
+<header class="site-header">
+  <nav>
+    <a href="{{ site.Home.RelPermalink }}" class="logo">
+      <span>{{ .Site.Title }}</span>
+    </a>
+    <ul class="nav-menu">
+      {{ range site.Home.Sections }}
+      <li><a href="{{ .RelPermalink }}"{{ if eq $.CurrentSection . }} class="active"{{ end }}>{{ .Title }}</a></li>
+      {{ end }}
+    </ul>
+    <div class="social-links">
+      {{- partial "hooks/social.html" . -}}
+    </div>
+    <button class="nav-toggle" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </nav>
+</header>
+<div class="nav-overlay"></div>
+<script>
+(function() {
+  var btn = document.querySelector('.nav-toggle');
+  var menu = document.querySelector('.nav-menu');
+  var overlay = document.querySelector('.nav-overlay');
+  function toggle() {
+    btn.classList.toggle('open');
+    menu.classList.toggle('open');
+    overlay.classList.toggle('open');
+  }
+  btn.addEventListener('click', toggle);
+  overlay.addEventListener('click', toggle);
+})();
+</script>

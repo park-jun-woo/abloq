@@ -1,0 +1,16 @@
+{{- $p := .page -}}
+{{- $current := .current -}}
+{{- $img := "og-image.webp" -}}
+{{- with $p.Params.image }}{{ $img = . }}{{ else }}
+  {{- with findRE `!\[.*?\]\((/images/[^)]+)\)` $p.RawContent 1 }}
+    {{- with index . 0 }}{{ $img = replaceRE `!\[.*?\]\((/images/[^)]+)\)` "$1" . }}{{ end }}
+  {{- end }}
+{{- end -}}
+<a class="post-card{{ if eq $p.Permalink $current }} current{{ end }}" href="{{ $p.RelPermalink }}">
+  <img src="{{ strings.TrimPrefix "/" $img | relURL }}" alt="{{ $p.Title }}" loading="lazy" width="320" height="180">
+  <div class="post-card-body">
+    <h2>{{ $p.Title }}</h2>
+    {{ with $p.Params.summary }}<p>{{ . }}</p>{{ end }}
+    {{ if not $p.Date.IsZero }}<time>{{ $p.Date.Format "2006-01-02" }}</time>{{ end }}
+  </div>
+</a>

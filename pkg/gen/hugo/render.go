@@ -1,5 +1,6 @@
 //ff:func feature=gen type=generator control=sequence
-//ff:what blog.yaml에서 hugo.toml 바이트를 렌더 — baseURL/기본 언어/sitemap/섹션 permalink/언어 블록, 같은 입력이면 바이트 동일
+//ff:what blog.yaml에서 hugo.toml 바이트를 렌더 — baseURL/기본 언어/sitemap/언어 블록, 같은 입력이면 바이트 동일
+//ff:why [permalinks] 블록을 내지 않는다 — Hugo 기본 경로 URL(파일명=slug, 번들=디렉토리명)이 게이트의 slug 계약과 정확히 일치하고, :slug 토큰은 제목 폴백이라 비ASCII 제목에서 계약을 깬다 (Phase005에서 발견)
 package hugo
 
 import (
@@ -30,7 +31,6 @@ func Render(b *blogyaml.Blog) []byte {
 	sb.WriteString("changefreq = \"weekly\"\n")
 	sb.WriteString("filename = \"sitemap.xml\"\n")
 	sb.WriteString("priority = 0.5\n")
-	sb.WriteString(renderPermalinks(b.Sections))
 	sb.WriteString(renderLanguages(b.Languages))
 	return []byte(sb.String())
 }

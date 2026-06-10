@@ -1,4 +1,4 @@
-# abloq codebook — filefunc 어휘 (Phase001~004 범위, 이후 Phase에서 증보)
+# abloq codebook — filefunc 어휘 (Phase001~005 범위, 이후 Phase에서 증보)
 required:
   feature:
     blogyaml: "blog.yaml SSOT — 스키마, strict 파싱, 기본값 주입, 검증 룰"
@@ -6,6 +6,10 @@ required:
     gen: "blog.yaml 파생물 생성기 — hugo.toml/robots.txt/llms.txt/JSON-LD 멱등 렌더링과 드리프트 체크"
     bots: "AI봇 UA 사전 — 훈련/검색/fetch 분류, robots 생성과 크롤 수집(Phase012)이 공유"
     gate: "구조 게이트 룰셋 — 저장소+blog.yaml+대상 글 입력으로 룰 단위 진단 생성, reins가 라이브러리로 호출"
+    init: "abloq init 스캐폴딩 — blog.yaml 작성, 템플릿(degit식) 복제, 디렉토리 골격"
+    postbuild: ".md 병행 서빙 — 빌드 산출물 옆에 글마다 노이즈 제로 .md 생성 (AI 컨텍스트 포맷)"
+    image: "이미지 도구 — OG 카드(1200×630) 생성과 WebP 변환, 순수 Go (외부 바이너리 없음)"
+    claudemd: "CLAUDE.md 생성기 — blog.yaml에서 에이전트 운영 매뉴얼(게시 절차/게이트/금지사항) 렌더"
   type:
     schema: "도메인 데이터 모델 — blog.yaml 스키마, 진단, 봇 UA, 발행 글, 산출물"
     parser: "파싱·수집 — strict YAML 디코드, front matter, 콘텐츠 스캔, 라인 인덱스"

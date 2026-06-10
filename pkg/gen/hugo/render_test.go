@@ -1,5 +1,5 @@
 //ff:func feature=gen type=generator control=iteration dimension=1
-//ff:what hugo.toml 렌더가 멱등이고 baseURL/기본 언어/sitemap/permalink/언어 블록을 포함하는지 검증
+//ff:what hugo.toml 렌더가 멱등이고 baseURL/기본 언어/sitemap/언어 블록을 포함하며 [permalinks]를 내지 않는지 검증
 package hugo
 
 import (
@@ -27,12 +27,14 @@ func TestRender(t *testing.T) {
 		"enableRobotsTXT = false",
 		`author = "A"`,
 		"[sitemap]",
-		`opinion = "/opinion/:slug/"`,
 		"[languages.en]",
 	}
 	for _, w := range wants {
 		if !strings.Contains(out, w) {
 			t.Errorf("want %q in hugo.toml, got:\n%s", w, out)
 		}
+	}
+	if strings.Contains(out, "[permalinks]") {
+		t.Errorf("hugo.toml must not declare [permalinks] (default path URLs = slug contract), got:\n%s", out)
 	}
 }

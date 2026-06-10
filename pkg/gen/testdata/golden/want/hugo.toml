@@ -13,10 +13,6 @@ changefreq = "weekly"
 filename = "sitemap.xml"
 priority = 0.5
 
-[permalinks]
-opinion = "/opinion/:slug/"
-tech = "/tech/:slug/"
-
 [languages.ko]
 languageCode = "ko"
 contentDir = "content/ko"

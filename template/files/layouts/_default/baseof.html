@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html lang="{{ .Lang }}"{{ if in (slice "ar" "he" "fa" "ur") .Lang }} dir="rtl"{{ end }}>
+<head>
+  {{- partial "head.html" . -}}
+</head>
+<body>
+  <canvas id="bg-canvas"></canvas>
+  {{- partial "header.html" . -}}
+  <main>
+    {{- block "main" . }}{{ end -}}
+  </main>
+  {{- partial "footer.html" . -}}
+  {{ $js := resources.Get "js/particles.js" | minify | fingerprint }}
+  <script src="{{ $js.RelPermalink }}" defer></script>
+</body>
+</html>
