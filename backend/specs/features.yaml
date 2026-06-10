@@ -60,6 +60,11 @@ features:
     desc: Detect unsourced numeric claims and confirmed link rot (3 consecutive failed scans) and enqueue evidence candidates (idempotent)
     table: queue_items
 
+  - op: ScanCluster
+    path: POST /scans/cluster
+    desc: Detect cluster violations (taxonomy drift, orphan tags, missing internal links, isolated posts) and enqueue curation candidates with link suggestions (idempotent)
+    table: queue_items
+
   - op: ExportQueue
     path: POST /queue/export
     desc: Export open queue items as quests/queue/*.yaml commits to the blog repository and sync agent-deleted files back to consumed

@@ -66,6 +66,11 @@ POST {{host}}/scans/evidence
 Authorization: Bearer {{viewer_token}}
 HTTP 403
 
+# ScanCluster is forbidden for non-operators
+POST {{host}}/scans/cluster
+Authorization: Bearer {{viewer_token}}
+HTTP 403
+
 # ExportQueue is forbidden for non-operators
 POST {{host}}/queue/export
 Authorization: Bearer {{viewer_token}}

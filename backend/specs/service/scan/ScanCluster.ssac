@@ -1,0 +1,20 @@
+package service
+
+import "github.com/park-jun-woo/abloqd/internal/scan"
+
+// Cluster scanner — tag/internal-link graph over the default-language corpus
+// (topical authority). The func reads the repository files under
+// BLOG_REPO_PATH directly: the posts table only stores link counts, so the
+// graph (in/outlink targets) must come from the bodies, and mixing the two
+// sources would break CLI equivalence whenever sync did not run first.
+// Detection (tag-taxonomy when geo.taxonomy is declared, no-orphan-tag,
+// min-internal-links, no-isolated-post) and the deterministic link-candidate
+// ranking live entirely in the pkg, so the SSaC stays branch-free. Queue
+// dedup is the Phase009 WHERE NOT EXISTS over (kind, slug, lang,
+// payload->>'section').
+
+// @auth "ScanCluster" "queue_item" {} "Forbidden" 403
+// @call ClusterResponse res = scan.Cluster({})
+// @put QueueItem.InsertMissingFromJson({ItemsJson: res.ItemsJSON})
+// @response { detected: res.Detected }
+func ScanCluster() {}

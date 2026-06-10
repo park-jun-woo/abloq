@@ -58,6 +58,13 @@ allow if {
     input.claims.role == "operator"
 }
 
+# Operator-only: detect cluster violations and enqueue curation candidates
+allow if {
+    input.action == "ScanCluster"
+    input.resource == "queue_item"
+    input.claims.role == "operator"
+}
+
 # Operator-only: export open queue items to the blog repository
 allow if {
     input.action == "ExportQueue"

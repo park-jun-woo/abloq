@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what "abloq scan" 부모 명령 생성 — 스캐너 서브커맨드(freshness·evidence) 등록, Phase011 스캐너가 합류
+//ff:what "abloq scan" 부모 명령 생성 — 스캐너 서브커맨드(freshness·evidence·cluster) 등록
 package main
 
 import "github.com/spf13/cobra"
@@ -14,5 +14,6 @@ func newScanCmd() *cobra.Command {
 	}
 	cmd.AddCommand(newScanFreshnessCmd())
 	cmd.AddCommand(newScanEvidenceCmd())
+	cmd.AddCommand(newScanClusterCmd())
 	return cmd
 }

@@ -1,0 +1,20 @@
+# Hurl cluster 시나리오 전용 픽스처 저장소 — 위반 4글 + 정상 1글 (Phase011).
+# 기존 fixtures/blog는 글 추가 금지(scenario-sync synced==2 등 연쇄 assert)라
+# 별도 abloqd 인스턴스(fresh DB·별도 포트·별도 bare repo)가 이 저장소를 마운트한다.
+site:
+  baseURL: https://cluster.example.com
+  title: Cluster Fixture Blog
+  author: Fixture Author
+  default_lang_in_subdir: false
+
+languages: [ko]
+sections: [tech]
+
+geo:
+  # lonely는 taxonomy 안(고아 태그 위반만), rogue는 taxonomy 밖이며 island와
+  # offtax 두 글이 공유한다(고아가 아닌 taxonomy 위반 — 분리 보장).
+  taxonomy: [geo, abloq, hugo, lonely]
+  min_internal_links: 2
+
+deploy:
+  provider: s3-cloudfront

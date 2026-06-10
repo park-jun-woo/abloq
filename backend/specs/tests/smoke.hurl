@@ -106,6 +106,15 @@ HTTP 200
 [Asserts]
 jsonpath "$.detected" >= 1
 
+# ScanCluster — coverage on the shared fixture is loose (the exact-count
+# oracle lives in scenario-cluster.hurl against the dedicated cluster-blog
+# fixture on its own abloqd instance — BLOG_REPO_PATH is process-wide)
+POST {{host}}/scans/cluster
+Authorization: Bearer {{token}}
+HTTP 200
+[Asserts]
+jsonpath "$.detected" >= 0
+
 # ExportQueue — pushes open items to the bare repo (QUEUE_EXPORT_*);
 # a no-op when everything is already exported
 POST {{host}}/queue/export
