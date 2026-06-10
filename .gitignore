@@ -1,0 +1,17 @@
+# 로컬 전용 (커밋 금지)
+CLAUDE.md
+.claude/
+.clari/
+
+# Go
+/abloq
+*.test
+*.out
+coverage/
+
+# yongol 생성물
+backend/arts/
+
+# 환경
+.env
+.env.*
