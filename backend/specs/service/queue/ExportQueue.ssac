@@ -3,17 +3,22 @@ package service
 import "github.com/park-jun-woo/abloqd/internal/queueio"
 
 // Queue exporter — the only backend→agent contact point (design §3.3). The
-// func pulls the dedicated work clone (QUEUE_EXPORT_*), syncs agent-deleted
-// files (exported → consumed), writes every open item's quests/queue file and
-// pushes. Status transitions run after the push so a failed export leaves
-// rows open for the next cycle; the UPDATE WHERE status guards preserve the
-// state-machine semantics until the Phase018 stateDiagram lands.
+// func pulls the site's dedicated work clone (repo URL/author from the site
+// row, clone at <QUEUE_EXPORT_WORKDIR>/<site> — per-site isolation), syncs
+// agent-deleted files (exported → consumed), writes every open item's
+// quests/queue file and pushes. An empty repo URL on the site row keeps the
+// established "unset = 500" behaviour, per site. Status transitions run
+// after the push so a failed export leaves rows open for the next cycle;
+// the UPDATE WHERE status guards preserve the state-machine semantics until
+// the Phase018 stateDiagram lands.
 
 // @auth "ExportQueue" "queue_item" {} "Forbidden" 403
-// @get string openJson = QueueItem.AggOpenJson()
-// @get string exportedJson = QueueItem.AggExportedJson()
-// @call ExportResponse res = queueio.Export({OpenJSON: openJson, ExportedJSON: exportedJson})
-// @put QueueItem.MarkExportedFromJson({IDSJson: res.ExportedIdsJSON})
-// @put QueueItem.MarkConsumedFromJson({IDSJson: res.ConsumedIdsJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string openJson = QueueItem.AggOpenJson({SiteID: site.ID})
+// @get string exportedJson = QueueItem.AggExportedJson({SiteID: site.ID})
+// @call ExportResponse res = queueio.Export({SiteName: site.Name, RepoURL: site.QueueExportRepo, Author: site.QueueExportAuthor, AuthorEmail: site.QueueExportAuthorEmail, OpenJSON: openJson, ExportedJSON: exportedJson})
+// @put QueueItem.MarkExportedFromJson({SiteID: site.ID, IDListJson: res.ExportedIdsJSON})
+// @put QueueItem.MarkConsumedFromJson({SiteID: site.ID, IDListJson: res.ConsumedIdsJSON})
 // @response { exported: res.Exported, consumed: res.Consumed }
 func ExportQueue() {}

@@ -29,11 +29,11 @@ func TestExport(t *testing.T) {
 	mustRun(t, seed, "git", "-c", "user.name=s", "-c", "user.email=s@t", "commit", "-m", "seed")
 	mustRun(t, seed, "git", "push", "file://"+bare, "main")
 
-	t.Setenv("QUEUE_EXPORT_REPO_URL", "file://"+bare)
 	t.Setenv("QUEUE_EXPORT_WORKDIR", filepath.Join(root, "work"))
 	open := `[{"id":1,"kind":"refresh","slug":"post-a","lang":"ko",` +
 		`"payload":{"section":"tech","lastmod":"2026-06-05"},"priority":20605}]`
-	resp, err := Export(ExportRequest{OpenJSON: open, ExportedJSON: "[]"})
+	resp, err := Export(ExportRequest{SiteName: "default", RepoURL: "file://" + bare,
+		OpenJSON: open, ExportedJSON: "[]"})
 	if err != nil {
 		t.Fatalf("Export: %v", err)
 	}
@@ -49,8 +49,27 @@ func TestExport(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(check, "quests", "queue", "refresh-ko-tech-post-a.yaml")); err != nil {
 		t.Fatalf("exported file missing in origin: %v", err)
 	}
-	t.Setenv("QUEUE_EXPORT_REPO_URL", "")
-	if _, err := Export(ExportRequest{OpenJSON: "[]", ExportedJSON: "[]"}); err == nil {
-		t.Error("missing env must error")
+	// The work clone landed under <base>/<site> — per-site isolation.
+	if _, err := os.Stat(filepath.Join(root, "work", "default", ".git")); err != nil {
+		t.Errorf("per-site work clone missing: %v", err)
+	}
+	if _, err := Export(ExportRequest{SiteName: "default", OpenJSON: "[]", ExportedJSON: "[]"}); err == nil {
+		t.Error("empty site repo URL must error (per-site 500 contract)")
+	}
+	if _, err := Export(ExportRequest{RepoURL: "file://" + bare, OpenJSON: "[]", ExportedJSON: "[]"}); err == nil {
+		t.Error("missing site name must error")
+	}
+}
+
+func TestWorkdirBase(t *testing.T) {
+	// Env unset falls back to the image default.
+	t.Setenv("QUEUE_EXPORT_WORKDIR", "")
+	if got := workdirBase(); got != "/var/lib/abloqd/queue-export" {
+		t.Errorf("unset env: want image default, got %q", got)
+	}
+	// Env set overrides (test harnesses point it at a temp dir).
+	t.Setenv("QUEUE_EXPORT_WORKDIR", "/tmp/qe")
+	if got := workdirBase(); got != "/tmp/qe" {
+		t.Errorf("set env: want /tmp/qe, got %q", got)
 	}
 }

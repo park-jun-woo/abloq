@@ -22,6 +22,7 @@ HOST="${1:?usage: run.sh <host> <bare-path>}"
 BARE="${2:?usage: run.sh <host> <bare-path>}"
 EMAIL="${ABLOQD_OPERATOR_EMAIL:-operator@abloq.test}"
 PASSWORD="${ABLOQD_OPERATOR_PASSWORD:-abloq-operator-test}"
+SITE="${ABLOQD_SITE:-default}"   # Phase020: domain ops live under /sites/<name>/
 CONSUME_FILE="${CONSUME_FILE:-refresh-ko-tech-post-b.yaml}"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
@@ -55,12 +56,12 @@ TOKEN=$(curl -sf -X POST "$HOST/auth/login" -H 'Content-Type: application/json' 
   -d "{\"email\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" | jsonget '["access_token"]')
 [ -n "$TOKEN" ] || fail "login failed"
 
-EXPORT=$(curl -sf -X POST "$HOST/queue/export" -H "Authorization: Bearer $TOKEN")
+EXPORT=$(curl -sf -X POST "$HOST/sites/$SITE/queue/export" -H "Authorization: Bearer $TOKEN")
 CONSUMED=$(echo "$EXPORT" | jsonget '["consumed"]')
 [ "$CONSUMED" = "1" ] || fail "expected consumed=1, got: $EXPORT"
 echo "ok: export reported consumed=1"
 
-ROWS=$(curl -sf "$HOST/queue?status=consumed" -H "Authorization: Bearer $TOKEN" \
+ROWS=$(curl -sf "$HOST/sites/$SITE/queue?status=consumed" -H "Authorization: Bearer $TOKEN" \
   | jsonget '["items"].__len__()')
 [ "$ROWS" = "1" ] || fail "expected 1 consumed row, got $ROWS"
 echo "ok: 1 row is status=consumed"

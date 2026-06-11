@@ -27,7 +27,7 @@ func runIngestGSC(out io.Writer, site, repo string, days int) error {
 			site += "/"
 		}
 	}
-	token, err := archive.GSCToken(archive.ScopeWebmastersReadonly)
+	token, err := archive.GSCTokenWith(archiveKeysFromEnv(), archive.ScopeWebmastersReadonly)
 	if err != nil {
 		return err
 	}

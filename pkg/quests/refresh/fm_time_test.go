@@ -5,8 +5,8 @@ package refresh
 import (
 	"testing"
 
-	agate "github.com/park-jun-woo/abloq/pkg/gate"
 	"github.com/park-jun-woo/abloq/pkg/blogyaml"
+	agate "github.com/park-jun-woo/abloq/pkg/gate"
 )
 
 func TestFMTime(t *testing.T) {

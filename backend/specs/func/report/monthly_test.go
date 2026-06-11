@@ -54,11 +54,12 @@ func bareOrigin(t *testing.T) (string, string) {
 }
 
 func TestMonthly(t *testing.T) {
-	t.Setenv("BLOG_REPO_PATH", fixtureRepo(t))
 	bare, work := bareOrigin(t)
-	t.Setenv("QUEUE_EXPORT_REPO_URL", "file://"+bare)
 	t.Setenv("QUEUE_EXPORT_WORKDIR", work)
 	req := MonthlyRequest{
+		RepoPath:  fixtureRepo(t),
+		SiteName:  "default",
+		RepoURL:   "file://" + bare,
 		Ym:        "2026-04",
 		PostsJSON: `[{"lang":"ko","section":"tech","slug":"post-a","date":"2026-06-01","lastmod":"2026-06-05"}]`,
 		BotsJSON: `[{"bot":"GPTBot","lang":"ko","section":"tech","slug":"post-a","hits":7,"md_hits":2},` +
@@ -120,14 +121,13 @@ func TestMonthly(t *testing.T) {
 }
 
 func TestMonthlyErrors(t *testing.T) {
-	t.Setenv("BLOG_REPO_PATH", "")
-	t.Setenv("QUEUE_EXPORT_REPO_URL", "")
-	t.Setenv("QUEUE_EXPORT_WORKDIR", "")
-	valid := MonthlyRequest{Ym: "2026-04", PostsJSON: "[]", BotsJSON: "[]", PrevBotsJSON: "[]",
+	t.Setenv("QUEUE_EXPORT_WORKDIR", filepath.Join(t.TempDir(), "w"))
+	valid := MonthlyRequest{SiteName: "default", Ym: "2026-04",
+		PostsJSON: "[]", BotsJSON: "[]", PrevBotsJSON: "[]",
 		GscJSON: "[]", PrevGscJSON: "[]", CitesJSON: "[]", PrevCitesJSON: "[]",
 		QueueJSON: "[]", UnknownJSON: "[]"}
 	if _, err := Monthly(valid); err == nil {
-		t.Error("missing BLOG_REPO_PATH must error")
+		t.Error("missing repo_path must error")
 	}
 	// Invalid blog.yaml (negative weight) is rejected before any work.
 	bad := t.TempDir()
@@ -136,25 +136,46 @@ func TestMonthlyErrors(t *testing.T) {
 			"languages: [ko]\nsections: [tech]\ngeo:\n  priority_weights:\n    fetcher: -1\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", bad)
-	if _, err := Monthly(valid); err == nil {
+	broken := valid
+	broken.RepoPath = bad
+	if _, err := Monthly(broken); err == nil {
 		t.Error("invalid blog.yaml must error")
 	}
-	t.Setenv("BLOG_REPO_PATH", fixtureRepo(t))
+	valid.RepoPath = fixtureRepo(t)
 	// Malformed aggregate JSON surfaces as a decode error.
-	broken := valid
+	broken = valid
 	broken.BotsJSON = "not json"
 	if _, err := Monthly(broken); err == nil {
 		t.Error("malformed aggregate JSON must error")
 	}
-	// Publication env is required (the report is publish-on-generate).
+	// The site row's publication repo URL is required (publish-on-generate).
 	if _, err := Monthly(valid); err == nil {
-		t.Error("missing QUEUE_EXPORT_* must error")
+		t.Error("missing queue_export_repo_url must error")
+	}
+	// A missing site name cannot derive the per-site work clone.
+	broken = valid
+	broken.SiteName = ""
+	broken.RepoURL = "file:///nonexistent/origin.git"
+	if _, err := Monthly(broken); err == nil {
+		t.Error("missing site name must error")
 	}
 	// An unreachable origin fails the publication step.
-	t.Setenv("QUEUE_EXPORT_REPO_URL", "file:///nonexistent/origin.git")
-	t.Setenv("QUEUE_EXPORT_WORKDIR", filepath.Join(t.TempDir(), "w"))
+	valid.RepoURL = "file:///nonexistent/origin.git"
 	if _, err := Monthly(valid); err == nil {
 		t.Error("unreachable origin must error")
+	}
+}
+
+func TestWorkdirBase(t *testing.T) {
+	// Env unset falls back to the image default — same convention as the
+	// queue exporter.
+	t.Setenv("QUEUE_EXPORT_WORKDIR", "")
+	if got := workdirBase(); got != "/var/lib/abloqd/queue-export" {
+		t.Errorf("unset env: want image default, got %q", got)
+	}
+	// Env set overrides (test harnesses point it at a temp dir).
+	t.Setenv("QUEUE_EXPORT_WORKDIR", "/tmp/qe")
+	if got := workdirBase(); got != "/tmp/qe" {
+		t.Errorf("set env: want /tmp/qe, got %q", got)
 	}
 }

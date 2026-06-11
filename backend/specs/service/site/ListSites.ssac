@@ -1,0 +1,13 @@
+package service
+
+// Instance-level site listing — the only global domain endpoint. The sites
+// table is the boot-upserted projection of sites.yaml (SITES_YAML_PATH);
+// cron runners iterate ?active=true and fan the per-site ops out in shell.
+// active rides as text ('', 'true', 'false') so one endpoint serves all
+// three states.
+
+// @no-pagination
+// @auth "ListSites" "site" {} "Forbidden" 403
+// @get []Site sites = Site.ListFiltered({ActiveFilter: request.active_filter})
+// @response { sites: sites }
+func ListSites() {}

@@ -4,19 +4,21 @@ import "github.com/park-jun-woo/abloqd/internal/ingest"
 
 // Crawl ingest — CloudFront logs to crawl_hits (daily cron). The cursor is a
 // closed-hour boundary riding in as a JSON scalar (DB state — the func never
-// reads the DB, ScanEvidence precedent): the func lists the CF_LOG_SOURCE
-// log objects, ingests only the hours past the cursor whose delivery window
-// closed (now - safety margin, CF_LOG_MARGIN_HOURS, default 2h), classifies
-// AI-bot UAs by dictionary substring match, reverse-maps URIs to articles
-// through the mounted repository (BLOG_REPO_PATH, .md twins land in
-// md_hits), and returns the three batch payloads. Re-running cannot
+// reads the DB, ScanEvidence precedent): the func lists the site's
+// cf_log_source log objects, ingests only the hours past the cursor whose
+// delivery window closed (now - safety margin, CF_LOG_MARGIN_HOURS, default
+// 2h), classifies AI-bot UAs by dictionary substring match, reverse-maps
+// URIs to articles through the site's repository (repo_path — .md twins
+// land in md_hits), and returns the three batch payloads. Re-running cannot
 // double-accumulate: the cursor only moves forward over closed hours.
 
 // @auth "IngestCrawl" "crawl_hit" {} "Forbidden" 403
-// @get string cursorsJson = IngestCursor.AggAllJson()
-// @call CrawlResponse res = ingest.Crawl({CursorsJSON: cursorsJson})
-// @put CrawlHit.UpsertFromJson({HitsJson: res.HitsJSON})
-// @put IngestCursor.UpsertFromJson({CursorsJson: res.CursorsJSON})
-// @put UnknownBot.UpsertFromJson({BotsJson: res.UnknownJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string cursorsJson = IngestCursor.AggAllJson({SiteID: site.ID})
+// @call CrawlResponse res = ingest.Crawl({RepoPath: site.RepoPath, LogSource: site.CfLogSource, CursorsJSON: cursorsJson})
+// @put CrawlHit.UpsertFromJson({SiteID: site.ID, HitsJson: res.HitsJSON})
+// @put IngestCursor.UpsertFromJson({SiteID: site.ID, CursorsJson: res.CursorsJSON})
+// @put UnknownBot.UpsertFromJson({SiteID: site.ID, BotsJson: res.UnknownJSON})
 // @response { files: res.Files, hits: res.Hits }
 func IngestCrawl() {}

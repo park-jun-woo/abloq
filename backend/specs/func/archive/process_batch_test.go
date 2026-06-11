@@ -15,7 +15,7 @@ func TestProcessBatch(t *testing.T) {
 	defer srv.Close()
 	t.Setenv("WAYBACK_BASE_URL", srv.URL)
 	t.Setenv("INDEXNOW_ENDPOINT", srv.URL+"/indexnow")
-	t.Setenv("INDEXNOW_KEY", "k123")
+	t.Setenv("INDEXNOW_KEY", "")
 	t.Setenv("GSC_SA_JSON", "")
 	t.Setenv("GSC_SA_JSON_PATH", "")
 	t.Setenv("GSC_DAILY_QUOTA", "1")
@@ -26,7 +26,7 @@ func TestProcessBatch(t *testing.T) {
 	  {"deploy_id":"d","kind":"gsc_index","target":"https://blog.example.com/p/","date":"","lastmod":""},
 	  {"deploy_id":"d","kind":"gsc_index","target":"https://blog.example.com/q/","date":"","lastmod":""}
 	]`
-	resp, err := ProcessBatch(ProcessBatchRequest{ReceiptsJSON: receipts, Limit: 100})
+	resp, err := ProcessBatch(ProcessBatchRequest{IndexNowKey: "k123", ReceiptsJSON: receipts, Limit: 100})
 	if err != nil {
 		t.Fatalf("ProcessBatch: %v", err)
 	}

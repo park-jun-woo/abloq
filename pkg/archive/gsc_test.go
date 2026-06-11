@@ -37,7 +37,7 @@ func TestProcessGSC(t *testing.T) {
 
 	t.Setenv("GSC_DAILY_QUOTA", "1")
 	byTarget := map[string]Item{}
-	for _, item := range processGSC(pending) {
+	for _, item := range processGSC(Keys{}, pending) {
 		byTarget[item.Target] = item
 	}
 	if len(byTarget) != 2 {
@@ -53,13 +53,13 @@ func TestProcessGSC(t *testing.T) {
 
 	t.Setenv("GSC_DAILY_QUOTA", "")
 	t.Setenv("GSC_SA_JSON", "")
-	for _, item := range processGSC(pending) {
+	for _, item := range processGSC(Keys{}, pending) {
 		if item.Status != StatusFailed {
 			t.Errorf("token failure item = %+v, want failed", item)
 		}
 	}
 
-	if processGSC(nil) != nil {
+	if processGSC(Keys{}, nil) != nil {
 		t.Error("empty group must be a no-op")
 	}
 }

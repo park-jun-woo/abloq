@@ -2,16 +2,20 @@ package service
 
 import "github.com/park-jun-woo/abloqd/internal/archive"
 
-// Archive processor — collects pending receipts (posts joined for the GSC
-// new-vs-updated priority) and executes the external calls in one batch:
-// Wayback SPN2 + IndexNow + GSC Indexing API. Kind dispatch, per-target
-// failure isolation and the GSC quota split all live inside pkg/archive
-// (SSaC stays branch-free). limit caps the batch size (quota protection);
-// unselected rows stay pending for the next run.
+// Archive processor — collects the site's pending receipts (posts joined for
+// the GSC new-vs-updated priority) and executes the external calls in one
+// batch: Wayback SPN2 + IndexNow + GSC Indexing API. Kind dispatch,
+// per-target failure isolation and the GSC quota split all live inside
+// pkg/archive (SSaC stays branch-free). The submission credentials come from
+// the site row (IndexNow key, GSC SA JSON path) — empty fields fall back to
+// the instance-global env (single-site backward compat). limit caps the
+// batch size (quota protection); unselected rows stay pending.
 
 // @auth "ProcessArchive" "receipt" {} "Forbidden" 403
-// @get string receiptsJson = Receipt.AggPendingJson()
-// @call ProcessBatchResponse batch = archive.ProcessBatch({ReceiptsJSON: receiptsJson, Limit: request.limit})
-// @put Receipt.UpsertFromJson({ItemsJson: batch.ResultsJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string receiptsJson = Receipt.AggPendingJson({SiteID: site.ID})
+// @call ProcessBatchResponse batch = archive.ProcessBatch({IndexNowKey: site.IndexnowKey, GSCSAJSONPath: site.GscSaPath, ReceiptsJSON: receiptsJson, Limit: request.limit})
+// @put Receipt.UpsertFromJson({SiteID: site.ID, ItemsJson: batch.ResultsJSON})
 // @response { processed: batch.Processed, done: batch.Done, failed: batch.Failed, deferred: batch.Deferred }
 func ProcessArchive() {}

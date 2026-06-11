@@ -1,9 +1,11 @@
 -- name: QueueItemInsertMissingFromJson :exec
 -- Batch insert of scan candidates. The dedup guard compares
 -- payload->>'section' because queue_items has no section column and the
--- posts unique key is (lang, section, slug): dropping section would silently
--- skip one of two same-slug articles in different sections. consumed|done
--- rows do not block — a consumed article may legitimately go stale again.
+-- posts unique key is (site_id, lang, section, slug): dropping section would
+-- silently skip one of two same-slug articles in different sections.
+-- consumed|done rows do not block — a consumed article may legitimately go
+-- stale again. The guard is site-scoped: the same article key on another
+-- site is a different work item.
 WITH incoming AS (
     SELECT (e->>'kind')::TEXT              AS kind,
            (e->>'slug')::TEXT              AS slug,
@@ -12,12 +14,13 @@ WITH incoming AS (
            (e->>'priority')::BIGINT        AS priority
     FROM jsonb_array_elements(@items_json::jsonb) AS e
 )
-INSERT INTO queue_items (kind, slug, lang, payload, priority)
-SELECT i.kind, i.slug, i.lang, i.payload, i.priority
+INSERT INTO queue_items (site_id, kind, slug, lang, payload, priority)
+SELECT @site_id, i.kind, i.slug, i.lang, i.payload, i.priority
 FROM incoming i
 WHERE NOT EXISTS (
     SELECT 1 FROM queue_items q
-    WHERE q.kind = i.kind
+    WHERE q.site_id = @site_id
+      AND q.kind = i.kind
       AND q.slug = i.slug
       AND q.lang = i.lang
       AND q.payload->>'section' = i.payload->>'section'
@@ -37,7 +40,7 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'priority', priority
        ) ORDER BY priority DESC, id), '[]'::jsonb)::text
 FROM queue_items
-WHERE status = 'open';
+WHERE site_id = @site_id AND status = 'open';
 
 -- name: QueueItemAggExportedJson :one
 -- Exported items for the consumed sync: the exporter recomputes each row's
@@ -51,21 +54,23 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'priority', priority
        ) ORDER BY priority DESC, id), '[]'::jsonb)::text
 FROM queue_items
-WHERE status = 'exported';
+WHERE site_id = @site_id AND status = 'exported';
 
 -- name: QueueItemMarkExportedFromJson :exec
 -- open → exported after a successful push. The WHERE status guard preserves
 -- the state-machine semantics until the Phase018 stateDiagram declares the
 -- transitions (XSM-23 needs every label to be an SSaC function).
 UPDATE queue_items SET status = 'exported', updated_at = NOW()
-WHERE status = 'open'
-  AND id IN (SELECT value::bigint FROM jsonb_array_elements_text(@ids_json::jsonb));
+WHERE site_id = @site_id
+  AND status = 'open'
+  AND id IN (SELECT value::bigint FROM jsonb_array_elements_text(@id_list_json::jsonb));
 
 -- name: QueueItemMarkConsumedFromJson :exec
 -- exported → consumed when the agent's consumption commit deleted the file.
 UPDATE queue_items SET status = 'consumed', updated_at = NOW()
-WHERE status = 'exported'
-  AND id IN (SELECT value::bigint FROM jsonb_array_elements_text(@ids_json::jsonb));
+WHERE site_id = @site_id
+  AND status = 'exported'
+  AND id IN (SELECT value::bigint FROM jsonb_array_elements_text(@id_list_json::jsonb));
 
 -- name: QueueItemListFiltered :many
 -- +no-pagination
@@ -73,7 +78,8 @@ WHERE status = 'exported'
 -- Operational lookup; empty-string filters mean "no filter". payload stays
 -- out of the JSON response via the DDL sensitive tag.
 SELECT * FROM queue_items
-WHERE (@kind::text = '' OR kind = @kind::text)
+WHERE site_id = @site_id
+  AND (@kind::text = '' OR kind = @kind::text)
   AND (@status::text = '' OR status = @status::text)
 ORDER BY priority DESC, id;
 
@@ -96,6 +102,7 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
 FROM (
     SELECT qi.kind, qi.status, COUNT(*)::BIGINT AS cnt
     FROM queue_items qi, bounds b
-    WHERE (qi.created_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE qi.site_id = @site_id
+      AND (qi.created_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY qi.kind, qi.status
 ) AS s;

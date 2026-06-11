@@ -17,15 +17,18 @@ WITH incoming AS (
            (e->>'url')::TEXT             AS url
     FROM jsonb_array_elements(@entries_json::jsonb) AS e
 ), removed AS (
+    -- the removal sweep is site-scoped: another site's index must never be
+    -- swept by this site's sync (multisite isolation)
     DELETE FROM posts
-    WHERE (lang, section, slug) NOT IN (SELECT lang, section, slug FROM incoming)
+    WHERE site_id = @site_id
+      AND (lang, section, slug) NOT IN (SELECT lang, section, slug FROM incoming)
 )
-INSERT INTO posts (lang, section, slug, title, "date", lastmod, word_count,
+INSERT INTO posts (site_id, lang, section, slug, title, "date", lastmod, word_count,
                    tags, internal_links, source_count, url)
-SELECT lang, section, slug, title, "date", lastmod, word_count,
+SELECT @site_id, lang, section, slug, title, "date", lastmod, word_count,
        tags, internal_links, source_count, url
 FROM incoming
-ON CONFLICT (lang, section, slug) DO UPDATE SET
+ON CONFLICT (site_id, lang, section, slug) DO UPDATE SET
     title = EXCLUDED.title,
     "date" = EXCLUDED."date",
     lastmod = EXCLUDED.lastmod,
@@ -39,7 +42,7 @@ ON CONFLICT (lang, section, slug) DO UPDATE SET
 -- name: PostListAll :many
 -- +no-pagination
 -- +allow-sensitive
-SELECT * FROM posts ORDER BY lang, section, slug;
+SELECT * FROM posts WHERE site_id = @site_id ORDER BY lang, section, slug;
 
 -- name: PostAggAllJson :one
 -- The posts index as a JSON text scalar for the freshness scanner func —
@@ -51,4 +54,5 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'date', "date",
            'lastmod', lastmod
        ) ORDER BY lang, section, slug), '[]'::jsonb)::text
-FROM posts;
+FROM posts
+WHERE site_id = @site_id;

@@ -40,11 +40,10 @@ func TestEvidence(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(postDir, "post-rot.md"), []byte(rot), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", dir)
 	t.Setenv("LINKCHECK_HOST_OVERRIDE", srv.URL)
 
 	// First scan: the claims item only; the dead citation is at 1 failure.
-	resp, err := Evidence(EvidenceRequest{ChecksJSON: "[]"})
+	resp, err := Evidence(EvidenceRequest{RepoPath: dir, ChecksJSON: "[]"})
 	if err != nil {
 		t.Fatalf("Evidence: %v", err)
 	}
@@ -66,7 +65,7 @@ func TestEvidence(t *testing.T) {
 	// Third consecutive failure (previous state says 2): rot confirms.
 	checks[0].ConsecutiveFailures = 2
 	prevJSON, _ := json.Marshal(checks)
-	resp, err = Evidence(EvidenceRequest{ChecksJSON: string(prevJSON)})
+	resp, err = Evidence(EvidenceRequest{RepoPath: dir, ChecksJSON: string(prevJSON)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -78,13 +77,11 @@ func TestEvidence(t *testing.T) {
 		t.Errorf("rot item: %+v", rows[1])
 	}
 
-	t.Setenv("BLOG_REPO_PATH", dir)
-	if _, err := Evidence(EvidenceRequest{ChecksJSON: "not-json"}); err == nil {
+	if _, err := Evidence(EvidenceRequest{RepoPath: dir, ChecksJSON: "not-json"}); err == nil {
 		t.Error("broken previous-state JSON must error")
 	}
 
-	t.Setenv("BLOG_REPO_PATH", t.TempDir())
-	if _, err := Evidence(EvidenceRequest{ChecksJSON: "[]"}); err == nil {
+	if _, err := Evidence(EvidenceRequest{RepoPath: t.TempDir(), ChecksJSON: "[]"}); err == nil {
 		t.Error("missing blog.yaml must error")
 	}
 
@@ -93,13 +90,11 @@ func TestEvidence(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(badDir, "blog.yaml"), []byte(badYAML), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", badDir)
-	if _, err := Evidence(EvidenceRequest{ChecksJSON: "[]"}); err == nil {
+	if _, err := Evidence(EvidenceRequest{RepoPath: badDir, ChecksJSON: "[]"}); err == nil {
 		t.Error("invalid blog.yaml must error")
 	}
 
-	t.Setenv("BLOG_REPO_PATH", "")
 	if _, err := Evidence(EvidenceRequest{ChecksJSON: "[]"}); err == nil {
-		t.Error("missing BLOG_REPO_PATH must error")
+		t.Error("missing repo_path must error")
 	}
 }

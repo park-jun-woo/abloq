@@ -1,5 +1,5 @@
 //ff:func feature=archive type=client control=iteration dimension=1
-//ff:what processIndexNow가 일괄 1회 POST로 전 target done/failed를 함께 매기고, 키 미설정·5xx면 전 항목 failed인지 검증
+//ff:what processIndexNow가 일괄 1회 POST로 전 target done/failed를 함께 매기고, 인자 키가 env보다 우선하며, 키 부재·5xx면 전 항목 failed인지 검증
 package archive
 
 import (
@@ -40,7 +40,7 @@ func TestProcessIndexNow(t *testing.T) {
 	t.Setenv("INDEXNOW_ENDPOINT", srv.URL)
 
 	t.Setenv("INDEXNOW_KEY", "")
-	for _, item := range processIndexNow(pending) {
+	for _, item := range processIndexNow("", pending) {
 		if item.Status != StatusFailed || !strings.Contains(string(item.Response), "INDEXNOW_KEY") {
 			t.Errorf("missing key: %+v, want failed with reason", item)
 		}
@@ -50,7 +50,7 @@ func TestProcessIndexNow(t *testing.T) {
 	}
 
 	t.Setenv("INDEXNOW_KEY", "k123")
-	items := processIndexNow(pending)
+	items := processIndexNow("", pending)
 	if calls != 1 {
 		t.Errorf("batch submission must POST exactly once, got %d", calls)
 	}
@@ -58,14 +58,21 @@ func TestProcessIndexNow(t *testing.T) {
 		t.Errorf("2xx batch = %+v, want both done", items)
 	}
 
+	t.Setenv("INDEXNOW_KEY", "env-key-must-lose")
+	for _, item := range processIndexNow("k123", pending) {
+		if item.Status != StatusDone {
+			t.Errorf("caller key must win over env: %+v, want done", item)
+		}
+	}
+
 	fail = true
-	for _, item := range processIndexNow(pending) {
+	for _, item := range processIndexNow("k123", pending) {
 		if item.Status != StatusFailed {
 			t.Errorf("5xx batch item = %+v, want failed", item)
 		}
 	}
 
-	if processIndexNow(nil) != nil {
+	if processIndexNow("k123", nil) != nil {
 		t.Error("empty group must be a no-op")
 	}
 }

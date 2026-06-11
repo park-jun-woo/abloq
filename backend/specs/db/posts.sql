@@ -1,5 +1,6 @@
 CREATE TABLE posts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     lang VARCHAR(35) NOT NULL,
     section TEXT NOT NULL,
     slug TEXT NOT NULL,
@@ -15,4 +16,4 @@ CREATE TABLE posts (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_posts_lang_section_slug ON posts(lang, section, slug);
+CREATE UNIQUE INDEX idx_posts_site_lang_section_slug ON posts(site_id, lang, section, slug);

@@ -6,6 +6,8 @@ package service
 
 // @no-pagination
 // @auth "ListCitationQueries" "citation_query" {} "Forbidden" 403
-// @get []CitationQuery queries = CitationQuery.ListFiltered({Slug: request.slug, ActiveFilter: request.active_filter})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []CitationQuery queries = CitationQuery.ListFiltered({SiteID: site.ID, Slug: request.slug, ActiveFilter: request.active_filter})
 // @response { queries: queries }
 func ListCitationQueries() {}

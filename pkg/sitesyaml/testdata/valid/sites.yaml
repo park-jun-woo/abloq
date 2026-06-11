@@ -1,0 +1,17 @@
+sites:
+  - name: parkjunwoo
+    repo_path: /blogs/parkjunwoo
+    queue_export:
+      repo_url: git@github.com:park-jun-woo/parkjunwoo.com.git
+      author: abloqd-bot
+      author_email: abloqd-bot@abloq.local
+    gsc:
+      site_url: sc-domain:parkjunwoo.com
+      sa_json_path: /secrets/gsc-sa.json
+    cf_log_source: s3://logs-bucket/parkjunwoo/
+    indexnow_key: 0f6e2b8c41d34c1c9a7e
+  - name: second-site
+    repo_path: /blogs/second-site
+    gsc:
+      site_url: https://second.example.com/
+    active: false

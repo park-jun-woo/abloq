@@ -3,16 +3,17 @@ package content
 import (
 	"encoding/json"
 	"errors"
-	"os"
 
 	pcontent "github.com/park-jun-woo/abloq/pkg/content"
 )
 
 // @func indexRepo
 // @error 500
-// @description Parse every article front matter under BLOG_REPO_PATH (blog.yaml SSOT drives languages, sections and the URL contract) and return the posts index as JSON
+// @description Parse every article front matter under the site's repo_path (blog.yaml SSOT drives languages, sections and the URL contract) and return the posts index as JSON
 
-type IndexRepoRequest struct{}
+type IndexRepoRequest struct {
+	RepoPath string
+}
 
 type IndexRepoResponse struct {
 	EntriesJSON []byte
@@ -20,14 +21,14 @@ type IndexRepoResponse struct {
 }
 
 // IndexRepo is the thin @call wrapper around pkg/content.IndexRepo: the blog
-// repository root comes from the BLOG_REPO_PATH environment variable so that
-// no path credential ever flows through the API surface.
+// repository root rides in from the site row (multisite — the handler
+// injects sites.repo_path), so no path credential ever flows through the
+// API surface and no instance-global env couples the sites together.
 func IndexRepo(req IndexRepoRequest) (IndexRepoResponse, error) {
-	root := os.Getenv("BLOG_REPO_PATH")
-	if root == "" {
-		return IndexRepoResponse{}, errors.New("BLOG_REPO_PATH is not set")
+	if req.RepoPath == "" {
+		return IndexRepoResponse{}, errors.New("site repo_path is not set")
 	}
-	entries, err := pcontent.IndexRepo(root)
+	entries, err := pcontent.IndexRepo(req.RepoPath)
 	if err != nil {
 		return IndexRepoResponse{}, err
 	}

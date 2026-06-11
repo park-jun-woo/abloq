@@ -2,7 +2,8 @@
 -- The GSC ingest cursor, derived from the snapshots themselves — no cursor
 -- table. Empty table must be '', not NULL (receipts COALESCE precedent):
 -- the func treats '' as "first collection, use the lookback window".
-SELECT COALESCE(MAX(snap_date)::text, '')::text FROM gsc_snapshots;
+SELECT COALESCE(MAX(snap_date)::text, '')::text FROM gsc_snapshots
+WHERE site_id = @site_id;
 
 -- name: GscSnapshotUpsertFromJson :exec
 -- Batch upsert of one collection's (day, page) rows. GSC reports final
@@ -16,10 +17,10 @@ WITH incoming AS (
            (e->>'avg_position')::DOUBLE PRECISION  AS avg_position
     FROM jsonb_array_elements(@rows_json::jsonb) AS e
 )
-INSERT INTO gsc_snapshots (snap_date, page, impressions, clicks, avg_position)
-SELECT i.snap_date, i.page, i.impressions, i.clicks, i.avg_position
+INSERT INTO gsc_snapshots (site_id, snap_date, page, impressions, clicks, avg_position)
+SELECT @site_id, i.snap_date, i.page, i.impressions, i.clicks, i.avg_position
 FROM incoming i
-ON CONFLICT (snap_date, page) DO UPDATE
+ON CONFLICT (site_id, snap_date, page) DO UPDATE
 SET impressions = EXCLUDED.impressions,
     clicks = EXCLUDED.clicks,
     avg_position = EXCLUDED.avg_position;
@@ -44,7 +45,8 @@ FROM (
     SELECT g.page,
            SUM(g.impressions)::BIGINT AS impressions, SUM(g.clicks)::BIGINT AS clicks
     FROM gsc_snapshots g, bounds b
-    WHERE g.snap_date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE g.site_id = @site_id
+      AND g.snap_date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY g.page
 ) AS s;
 
@@ -65,6 +67,7 @@ FROM (
     SELECT g.page,
            SUM(g.impressions)::BIGINT AS impressions, SUM(g.clicks)::BIGINT AS clicks
     FROM gsc_snapshots g, bounds b
-    WHERE g.snap_date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE g.site_id = @site_id
+      AND g.snap_date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY g.page
 ) AS s;

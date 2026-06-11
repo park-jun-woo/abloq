@@ -7,10 +7,11 @@
 -- ...) — a bare reset double-accumulates (manual SQL, no API).
 CREATE TABLE ingest_cursors (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     source VARCHAR(64) NOT NULL,
     cursor_hour VARCHAR(13) NOT NULL DEFAULT '',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_ingest_cursors_source ON ingest_cursors(source);
+CREATE UNIQUE INDEX idx_ingest_cursors_site_source ON ingest_cursors(site_id, source);

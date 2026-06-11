@@ -2,7 +2,14 @@ package authz
 
 default allow := false
 
-# Operator-only: sync the posts index from the blog repository
+# Operator-only: list the declared sites (cron runners iterate ?active=true)
+allow if {
+    input.action == "ListSites"
+    input.resource == "site"
+    input.claims.role == "operator"
+}
+
+# Operator-only: sync the posts index from the site's blog repository
 allow if {
     input.action == "Sync"
     input.resource == "post"

@@ -1,6 +1,7 @@
 -- @func-managed
 CREATE TABLE gsc_snapshots (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     snap_date DATE NOT NULL,
     page TEXT NOT NULL,
     impressions BIGINT NOT NULL DEFAULT 0,
@@ -9,4 +10,4 @@ CREATE TABLE gsc_snapshots (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_gsc_snapshots_key ON gsc_snapshots(snap_date, page);
+CREATE UNIQUE INDEX idx_gsc_snapshots_key ON gsc_snapshots(site_id, snap_date, page);

@@ -13,6 +13,7 @@ required:
     claudemd: "CLAUDE.md 생성기 — blog.yaml에서 에이전트 운영 매뉴얼(게시 절차/게이트/금지사항) 렌더"
     content: "콘텐츠 인덱서 — 발행 글 front matter 전수 파싱 → 인덱스 항목(posts 1행 대응), CLI와 abloqd 백엔드가 공유 (Phase007)"
     scan: "콘텐츠 스캐너 — freshness_days 초과 글·무출처 수치 주장·인용 link rot·클러스터 위반(태그·내부링크 그래프) 검출 → 우선순위 큐 후보, CLI와 abloqd 백엔드가 공유 (Phase009·010·011)"
+    sitesyaml: "sites.yaml SSOT — abloqd 인스턴스의 사이트 목록 선언, strict 파싱·active 기본값 주입·검증 룰(name 슬러그·repo_path 절대경로·gsc.site_url 형식), 기동 시 sites 테이블 upsert의 입력 (Phase020)"
     queueio: "큐 exporter 공통 모듈 — queue_items → quests/queue/*.yaml 결정적 직렬화 + 전용 작업 클론 커밋·푸시, 역방향 consumed 동기화 (Phase009, Phase010·011 재사용)"
     insight: "인사이트 명세 — insight.yaml strict 파싱·검증과 anchors 본문 대조(NFC+케이스 폴딩 부분문자열, REVIEW 보조), 집필 퀘스트 게이트의 기준 (Phase015)"
     quest: "퀘스트 — reins gate.Definition 소비자(Seed/Render/Prepare/Rules), 공용 어댑터(quests/common)와 REVIEW 기록·translation-parity 룰, abloq quest <name>으로 마운트 (Phase016 집필, Phase017 번역, Phase018 큐 소비 3종)"

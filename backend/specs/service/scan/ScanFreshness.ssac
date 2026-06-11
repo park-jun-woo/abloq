@@ -2,24 +2,26 @@ package service
 
 import "github.com/park-jun-woo/abloqd/internal/scan"
 
-// Freshness scanner — collects the posts index, the all-time crawl-hit sums
-// (cold-start signal) and the Phase014 window aggregates (per-bot crawl,
-// GSC pages, citation hits; request.ym '' = the last closed month, resolved
-// inside each window query's SQL) as JSON scalars, detects stale articles
-// (geo.freshness_days from the mounted blog.yaml) and batch-inserts refresh
-// candidates priced by the Composite scorer (measured weights from
-// geo.priority_weights, cold-start fallback when every measured signal is
-// zero). Duplicate protection is the query's WHERE NOT EXISTS over (kind,
-// slug, lang, payload->>'section') against open|exported rows — SSaC stays
-// branch-free.
+// Freshness scanner — collects the site's posts index, the all-time
+// crawl-hit sums (cold-start signal) and the Phase014 window aggregates
+// (per-bot crawl, GSC pages, citation hits; request.ym '' = the last closed
+// month, resolved inside each window query's SQL) as JSON scalars, detects
+// stale articles (geo.freshness_days from the site's blog.yaml) and
+// batch-inserts refresh candidates priced by the Composite scorer (measured
+// weights from geo.priority_weights, cold-start fallback when every measured
+// signal is zero). Duplicate protection is the query's WHERE NOT EXISTS over
+// (site_id, kind, slug, lang, payload->>'section') against open|exported
+// rows — SSaC stays branch-free.
 
 // @auth "ScanFreshness" "queue_item" {} "Forbidden" 403
-// @get string postsJson = Post.AggAllJson()
-// @get string hitsJson = CrawlHit.AggSumsJson()
-// @get string botsJson = CrawlHit.AggBotMonthJson({Ym: request.ym})
-// @get string gscJson = GscSnapshot.AggPageMonthJson({Ym: request.ym})
-// @get string citesJson = CitationSample.AggMonthJson({Ym: request.ym})
-// @call FreshnessResponse cand = scan.Freshness({PostsJSON: postsJson, HitsJSON: hitsJson, BotsJSON: botsJson, GscJSON: gscJson, CitesJSON: citesJson})
-// @put QueueItem.InsertMissingFromJson({ItemsJson: cand.ItemsJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string postsJson = Post.AggAllJson({SiteID: site.ID})
+// @get string hitsJson = CrawlHit.AggSumsJson({SiteID: site.ID})
+// @get string botsJson = CrawlHit.AggBotMonthJson({SiteID: site.ID, Ym: request.ym})
+// @get string gscJson = GscSnapshot.AggPageMonthJson({SiteID: site.ID, Ym: request.ym})
+// @get string citesJson = CitationSample.AggMonthJson({SiteID: site.ID, Ym: request.ym})
+// @call FreshnessResponse cand = scan.Freshness({RepoPath: site.RepoPath, PostsJSON: postsJson, HitsJSON: hitsJson, BotsJSON: botsJson, GscJSON: gscJson, CitesJSON: citesJson})
+// @put QueueItem.InsertMissingFromJson({SiteID: site.ID, ItemsJson: cand.ItemsJSON})
 // @response { detected: cand.Detected }
 func ScanFreshness() {}

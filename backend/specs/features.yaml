@@ -1,5 +1,6 @@
 tables:
   users: {}
+  sites: {}
   posts: {}
   receipts: {}
   queue_items: {}
@@ -23,107 +24,112 @@ features:
     table: users
     public: true
 
+  - op: ListSites
+    path: GET /sites
+    desc: List the declared sites with an active filter (cron runners iterate ?active=true; the sites.yaml SSOT is upserted at boot)
+    table: sites
+
   - op: Sync
-    path: POST /sync
-    desc: Parse every front matter in the blog repository and upsert the posts index
+    path: POST /sites/{site}/sync
+    desc: Parse every front matter in the site's blog repository and upsert the posts index
     table: posts
 
   - op: ListPosts
-    path: GET /posts
-    desc: List the indexed posts
+    path: GET /sites/{site}/posts
+    desc: List the indexed posts of one site
     table: posts
 
   - op: HookDeployed
-    path: POST /hooks/deployed
+    path: POST /sites/{site}/hooks/deployed
     desc: Record pending archive receipts for the changed URLs of a deploy (idempotent per deploy_id)
     table: receipts
 
   - op: ProcessArchive
-    path: POST /archive/process
-    desc: Execute pending archive receipts against Wayback, IndexNow and the GSC Indexing API
+    path: POST /sites/{site}/archive/process
+    desc: Execute pending archive receipts against Wayback, IndexNow and the GSC Indexing API with the site's submission credentials
     table: receipts
 
   - op: RetryReceipts
-    path: POST /receipts/retry
+    path: POST /sites/{site}/receipts/retry
     desc: Rearm failed and deferred archive receipts back to pending
     table: receipts
 
   - op: ListReceipts
-    path: GET /receipts
+    path: GET /sites/{site}/receipts
     desc: List archive receipts filtered by target, kind, deploy_id and status
     table: receipts
 
   - op: ScanFreshness
-    path: POST /scans/freshness
+    path: POST /sites/{site}/scans/freshness
     desc: Detect articles whose lastmod exceeded geo.freshness_days and enqueue refresh candidates priced by the composite priority scorer (idempotent — open/exported duplicates are skipped)
     table: queue_items
 
   - op: ScanEvidence
-    path: POST /scans/evidence
+    path: POST /sites/{site}/scans/evidence
     desc: Detect unsourced numeric claims and confirmed link rot (3 consecutive failed scans) and enqueue evidence candidates (idempotent)
     table: queue_items
 
   - op: ScanCluster
-    path: POST /scans/cluster
+    path: POST /sites/{site}/scans/cluster
     desc: Detect cluster violations (taxonomy drift, orphan tags, missing internal links, isolated posts) and enqueue curation candidates with link suggestions (idempotent)
     table: queue_items
 
   - op: ExportQueue
-    path: POST /queue/export
-    desc: Export open queue items as quests/queue/*.yaml commits to the blog repository and sync agent-deleted files back to consumed
+    path: POST /sites/{site}/queue/export
+    desc: Export open queue items as quests/queue/*.yaml commits to the site's blog repository and sync agent-deleted files back to consumed
     table: queue_items
 
   - op: ListQueue
-    path: GET /queue
+    path: GET /sites/{site}/queue
     desc: List queue items filtered by kind and status
     table: queue_items
 
   - op: IngestCrawl
-    path: POST /ingest/crawl
-    desc: Aggregate AI-bot hits from CloudFront logs into crawl_hits (closed-hour cursor, idempotent re-ingest)
+    path: POST /sites/{site}/ingest/crawl
+    desc: Aggregate AI-bot hits from the site's CloudFront logs into crawl_hits (closed-hour cursor, idempotent re-ingest)
     table: crawl_hits
 
   - op: ListCrawlHits
-    path: GET /crawl-hits
+    path: GET /sites/{site}/crawl-hits
     desc: List aggregated crawl hits filtered by lang, section, slug and hit_date range
     table: crawl_hits
 
   - op: IngestGSC
-    path: POST /ingest/gsc
+    path: POST /sites/{site}/ingest/gsc
     desc: Collect daily Search Analytics rows (impressions, clicks, avg position) for closed days past the MAX(snap_date) cursor; optional URL Inspection summary
     table: gsc_snapshots
 
   - op: CreateCitationQuery
-    path: POST /citation-queries
+    path: POST /sites/{site}/citation-queries
     desc: Register one standard citation-sampling query for an article
     table: citation_queries
 
   - op: ListCitationQueries
-    path: GET /citation-queries
+    path: GET /sites/{site}/citation-queries
     desc: List citation-sampling queries filtered by slug and active
     table: citation_queries
 
   - op: DeleteCitationQuery
-    path: DELETE /citation-queries/{id}
+    path: DELETE /sites/{site}/citation-queries/{id}
     desc: Deactivate a citation-sampling query (soft delete — samples keep their FK history)
     table: citation_queries
 
   - op: SampleCitations
-    path: POST /sample/citations
-    desc: Run one citation-sampling round over the active queries (citation_budget per engine, 0 = disabled) and record the samples
+    path: POST /sites/{site}/sample/citations
+    desc: Run one citation-sampling round over the site's active queries (citation_budget per engine, 0 = disabled) and record the samples
     table: citation_samples
 
   - op: ListCitations
-    path: GET /citations
+    path: GET /sites/{site}/citations
     desc: List recorded citation samples joined with their queries, filtered by slug (trend readout only — feeds no gate)
     table: citation_samples
 
   - op: GenerateMonthlyReport
-    path: POST /reports/monthly
-    desc: Assemble the monthly visibility report (crawl x index x citation per article, trend, unknown bots, queue intake), upsert it per ym and publish the markdown copy to the blog repository
+    path: POST /sites/{site}/reports/monthly
+    desc: Assemble the monthly visibility report (crawl x index x citation per article, trend, unknown bots, queue intake), upsert it per (site, ym) and publish the markdown copy to the site's blog repository
     table: reports
 
   - op: GetMonthlyReport
-    path: GET /reports/monthly/{ym}
+    path: GET /sites/{site}/reports/monthly/{ym}
     desc: Read one stored monthly visibility report by ym (the DB row is the lookup truth)
     table: reports

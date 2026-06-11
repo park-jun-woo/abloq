@@ -6,6 +6,8 @@ package service
 
 // @no-pagination
 // @auth "ListReceipts" "receipt" {} "Forbidden" 403
-// @get []Receipt receipts = Receipt.ListFiltered({Target: request.target, Kind: request.kind, DeployID: request.deploy_id, Status: request.status})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []Receipt receipts = Receipt.ListFiltered({SiteID: site.ID, Target: request.target, Kind: request.kind, DeployID: request.deploy_id, Status: request.status})
 // @response { receipts: receipts }
 func ListReceipts() {}

@@ -24,9 +24,8 @@ func TestFreshness(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "content", "ko", "tech", "post-a.md"), []byte(post), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", dir)
 	posts := `[{"lang":"ko","section":"tech","slug":"post-a","date":"2026-06-01","lastmod":"2026-06-05"}]`
-	empty := FreshnessRequest{PostsJSON: posts, HitsJSON: "[]", BotsJSON: "[]", GscJSON: "[]", CitesJSON: "[]"}
+	empty := FreshnessRequest{RepoPath: dir, PostsJSON: posts, HitsJSON: "[]", BotsJSON: "[]", GscJSON: "[]", CitesJSON: "[]"}
 	resp, err := Freshness(empty)
 	if err != nil {
 		t.Fatalf("Freshness: %v", err)
@@ -70,9 +69,10 @@ func TestFreshness(t *testing.T) {
 	if rows[0].Priority != 140 {
 		t.Errorf("measured priority must be the weighted sum 140: %d", rows[0].Priority)
 	}
-	t.Setenv("BLOG_REPO_PATH", "")
-	if _, err := Freshness(empty); err == nil {
-		t.Error("missing BLOG_REPO_PATH must error")
+	noRepo := empty
+	noRepo.RepoPath = ""
+	if _, err := Freshness(noRepo); err == nil {
+		t.Error("missing repo_path must error")
 	}
 	var raw []map[string]any
 	if err := json.Unmarshal(resp.ItemsJSON, &raw); err != nil {

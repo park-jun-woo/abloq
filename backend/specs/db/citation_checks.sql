@@ -10,6 +10,7 @@
 -- @func-managed
 CREATE TABLE citation_checks (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     url TEXT NOT NULL,
     lang VARCHAR(35) NOT NULL,
     section TEXT NOT NULL,
@@ -21,4 +22,4 @@ CREATE TABLE citation_checks (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_citation_checks_key ON citation_checks(url, lang, section, slug);
+CREATE UNIQUE INDEX idx_citation_checks_key ON citation_checks(site_id, url, lang, section, slug);

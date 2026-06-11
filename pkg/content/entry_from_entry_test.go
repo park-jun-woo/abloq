@@ -22,13 +22,13 @@ func TestEntryFromEntry(t *testing.T) {
 		t.Fatalf("ReadDir: %v", err)
 	}
 	want := map[string]bool{
-		"_index.md": false, // 언더스코어 접두 — 스킵
-		"notes.txt": false, // 비마크다운 — 스킵
+		"_index.md":  false, // 언더스코어 접두 — 스킵
+		"notes.txt":  false, // 비마크다운 — 스킵
 		"draft-x.md": false, // draft: true — 스킵
-		"no-fm.md":  false, // front matter 없음 — 스킵
-		"empty-dir": false, // index.md 없는 번들 — 스킵
-		"post-a":    true,  // 번들(post-a/index.md)
-		"post-b.md": true,  // 플랫 파일
+		"no-fm.md":   false, // front matter 없음 — 스킵
+		"empty-dir":  false, // index.md 없는 번들 — 스킵
+		"post-a":     true,  // 번들(post-a/index.md)
+		"post-b.md":  true,  // 플랫 파일
 	}
 	for _, de := range dirEntries {
 		e, ok := entryFromEntry(sectionDir, b, "ko", "tech", de)

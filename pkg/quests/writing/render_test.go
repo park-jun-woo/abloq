@@ -24,9 +24,9 @@ func TestRender(t *testing.T) {
 		"target article: content/en/posts/hello.md",
 		"submit --key en/posts/hello",
 		"topic: \"test topic\"", // insight raw
-		"## T1 — 자료 수집",       // tasks.md
-		"## T4 — REVIEW",      // tasks.md
-		"자가 REVIEW 금지",        // context.md
+		"## T1 — 자료 수집",         // tasks.md
+		"## T4 — REVIEW",        // tasks.md
+		"자가 REVIEW 금지",          // context.md
 	} {
 		if !strings.Contains(got, want) {
 			t.Errorf("prompt missing %q", want)

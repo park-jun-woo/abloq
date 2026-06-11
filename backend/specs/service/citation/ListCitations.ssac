@@ -1,11 +1,13 @@
 package service
 
-// Citation time-series readout; the slug filter joins through the query
-// table inside the sqlc query. Trend reference for the Phase014 report only — never a
-// gate input. Empty-string slug means "no filter".
+// Citation time-series readout; the site and slug filters join through the
+// query table inside the sqlc query. Trend reference for the Phase014
+// report only — never a gate input. Empty-string slug means "no filter".
 
 // @no-pagination
 // @auth "ListCitations" "citation_sample" {} "Forbidden" 403
-// @get []CitationSample samples = CitationSample.ListFiltered({Slug: request.slug})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []CitationSample samples = CitationSample.ListFiltered({SiteID: site.ID, Slug: request.slug})
 // @response { samples: samples }
 func ListCitations() {}

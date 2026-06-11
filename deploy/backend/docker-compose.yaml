@@ -1,4 +1,4 @@
-# abloqd 셀프호스트 한 장 — postgres + abloqd (+아카이버 cron 백스톱) (Phase007·008)
+# abloqd 셀프호스트 한 장 — postgres + abloqd (+cron 프로필 9종) (Phase007·008·020)
 #
 # 사용:
 #   1. yongol generate backend/specs backend/arts   # arts는 일회용 projection
@@ -7,16 +7,34 @@
 #   3. docker compose -f deploy/backend/docker-compose.yaml up -d --build
 #      (+아카이버 cron 백스톱까지: --profile backstop, ABLOQD_OPERATOR_* 필요)
 #
+# 멀티사이트 (Phase020, v0.2.0): abloqd 한 인스턴스가 사이트 N개를 서빙한다.
+#   - 사이트 목록 SSOT는 sites.yaml (cp sites.yaml.example sites.yaml) —
+#     아래 abloqd 서비스의 SITES_YAML_PATH env + 마운트 주석을 해제하고
+#     사이트별 블로그 저장소를 /blogs/<name> 으로 마운트한다.
+#   - 하위호환: SITES_YAML_PATH 없이 BLOG_REPO_PATH만 주면 기동 시
+#     name=default 사이트 1개가 기존 사이트 단위 env 8종(BLOG_REPO_PATH,
+#     QUEUE_EXPORT_REPO_URL·AUTHOR·AUTHOR_EMAIL, GSC_SITE_URL,
+#     GSC_SA_JSON_PATH, CF_LOG_SOURCE, INDEXNOW_KEY)으로 합성된다.
+#     멀티사이트로 가면 그 8종은 sites.yaml 의 사이트 행으로 이관한다
+#     (빈 행 값은 전역 env fallback — 행 값이 항상 이긴다).
+#   - 도메인 API 경로는 전부 /sites/<name>/… 로 이동했다 (기존 배포의
+#     훅·cron 경로는 /sites/default/… 로 — docs/operations.md §마이그레이션).
+#   - 기존 단일 사이트 DB는 migrate-0.2.0-multisite.sql 로 마이그레이션
+#     (기존 데이터 전부 name=default 행으로 백필).
+#
 # blog.yaml ↔ manifest는 별개 SSOT(설계서 §10.3): abloqd는 마운트된 블로그
 # 저장소의 blog.yaml(BLOG_REPO_PATH/blog.yaml)을 읽어 언어·섹션·URL 계약과
 # geo 임계를 파라미터로 쓴다. blog.yaml은 이미지에 굽지 않고 저장소 마운트로
 # 따라 들어온다 — 저장소 경로·자격증명은 전부 env로만 주입한다.
 #
 # 아카이버(Phase008) 트리거 구조:
-#   - 배포 직후: CI가 login → POST /hooks/deployed → POST /archive/process를
-#     직접 호출한다 (template/files/deploy/archiver.md). 실행 시각 = 증거 가치.
+#   - 배포 직후: CI가 login → POST /sites/<site>/hooks/deployed →
+#     POST /sites/<site>/archive/process를 직접 호출한다
+#     (template/files/deploy/archiver.md). 실행 시각 = 증거 가치.
 #   - cron 백스톱(archiver-backstop, 권고 15분): failed/deferred 청소 전용 —
-#     login → POST /receipts/retry → POST /archive/process 순서가 필수다.
+#     GET /sites?active_filter=true 순회로 사이트마다
+#     login → POST /sites/<s>/receipts/retry → POST /sites/<s>/archive/process
+#     순서가 필수다.
 #     retry만 걸면 deferred가 영원히 실행되지 않고, process만 걸면
 #     failed/deferred가 pending으로 돌아오지 않는다.
 
@@ -31,11 +49,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
     volumes:
       - pgdata:/var/lib/postgresql/data
-      # 최초 기동 시 스키마 적용 (이후 마이그레이션은 운영 절차로)
+      # 최초 기동 시 스키마 적용 (이후 마이그레이션은 운영 절차로).
+      # v0.2.0에서 베이스라인을 멀티사이트 스키마로 재설정 — 신규 설치는
+      # 0001 한 장이 전부다. 기존 단일 사이트 DB는 initdb가 아니라
+      # migrate-0.2.0-multisite.sql 을 수동 적용한다 (default 백필).
       - ../../backend/arts/db/migrations/0001_initial.up.sql:/docker-entrypoint-initdb.d/0001_initial.up.sql:ro
-      - ../../backend/arts/db/migrations/0002_create_ingest_cursors_and_more.up.sql:/docker-entrypoint-initdb.d/0002_create_ingest_cursors_and_more.up.sql:ro
-      - ../../backend/arts/db/migrations/0003_add_citation_samples_extractor_version.up.sql:/docker-entrypoint-initdb.d/0003_add_citation_samples_extractor_version.up.sql:ro
-      - ../../backend/arts/db/migrations/0004_create_reports_and_more.up.sql:/docker-entrypoint-initdb.d/0004_create_reports_and_more.up.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-abloqd} -d ${POSTGRES_DB:-abloqd}"]
       interval: 5s
@@ -53,7 +71,18 @@ services:
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER:-abloqd}:${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}@postgres:5432/${POSTGRES_DB:-abloqd}?sslmode=disable
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required (>= 32 chars)}
-      # 컨테이너 안에서 블로그 저장소는 항상 /blog — blog.yaml도 여기서 읽는다
+      # ── 멀티사이트 (Phase020) ──────────────────────────────────────
+      # sites.yaml 선언 SSOT를 쓰려면 아래 env와 volumes의 sites.yaml /
+      # /blogs/<name> 마운트 주석을 해제한다. SITES_YAML_PATH가 설정되면
+      # 기동 시 그 파일이 sites 테이블의 유일한 진실이 되고, 아래
+      # "사이트 단위" env 8종(BLOG_REPO_PATH, QUEUE_EXPORT_REPO_URL·
+      # AUTHOR·AUTHOR_EMAIL, GSC_SITE_URL, GSC_SA_JSON_PATH,
+      # CF_LOG_SOURCE, INDEXNOW_KEY)은 sites.yaml의 사이트 행으로
+      # 이관한다 (빈 행 값만 전역 env로 fallback).
+      #SITES_YAML_PATH: /etc/abloqd/sites.yaml
+      # 하위호환(단일 사이트): SITES_YAML_PATH 없이 BLOG_REPO_PATH만 주면
+      # 기동 시 name=default 사이트 1개가 합성된다 — 컨테이너 안에서
+      # 블로그 저장소는 항상 /blog, blog.yaml도 여기서 읽는다.
       BLOG_REPO_PATH: /blog
       LOG_LEVEL: ${LOG_LEVEL:-info}
       GIN_MODE: release
@@ -108,13 +137,22 @@ services:
         -o IdentitiesOnly=yes
     volumes:
       - ${BLOG_REPO_PATH:?BLOG_REPO_PATH is required (host path of the blog repository)}:/blog:ro
+      # ── 멀티사이트 마운트 (Phase020) — SITES_YAML_PATH를 켤 때 함께 ──
+      # 사이트 선언 SSOT (cp sites.yaml.example sites.yaml)
+      #- ./sites.yaml:/etc/abloqd/sites.yaml:ro
+      # 사이트별 블로그 저장소 — /blogs/<name> 컨벤션 권장 (sites.yaml의
+      # repo_path와 일치해야 한다; 코드는 선언된 절대경로만 신뢰)
+      #- /srv/blogs/parkjunwoo:/blogs/parkjunwoo:ro
+      #- /srv/blogs/second-blog:/blogs/second-blog:ro
       # GSC 서비스 계정 JSON (없으면 /dev/null — gsc_index 영수증이 failed로 남는다)
       - ${GSC_SA_JSON_FILE:-/dev/null}:/etc/abloqd/gsc-sa.json:ro
       # 큐 exporter deploy key(쓰기 권한)와 known_hosts (없으면 /dev/null —
       # ssh origin 푸시가 실패할 뿐 file:// origin은 무관)
       - ${QUEUE_DEPLOY_KEY_FILE:-/dev/null}:/etc/abloqd/queue-deploy-key:ro
       - ${QUEUE_KNOWN_HOSTS_FILE:-/dev/null}:/etc/abloqd/known_hosts:ro
-      # 작업 클론 영속 볼륨 — 재시작마다 전체 클론을 다시 받지 않는다
+      # 작업 클론 영속 볼륨 — 재시작마다 전체 클론을 다시 받지 않는다.
+      # 멀티사이트: 사이트마다 /var/lib/abloqd/queue-export/<name>/ 하위
+      # 클론을 따로 쓴다 (리포트 발행 클론은 <name>-reports).
       - queue-export:/var/lib/abloqd/queue-export
     ports:
       - "${ABLOQD_PORT:-8080}:8080"
@@ -146,16 +184,23 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "backstop: login failed"; continue; }
-          # ② retry — failed/deferred → pending 재무장 (deferred 흡수에 필수)
-          curl -sf -X POST http://abloqd:8080/receipts/retry \
-            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
-            -d '{"deploy_id":"","kind_filter":""}' >/dev/null \
-            || echo "backstop: retry failed"
-          # ③ process — pending 일괄 실행 (멱등, limit로 쿼터 보호)
-          curl -sf -m 600 -X POST http://abloqd:8080/archive/process \
-            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
-            -d "{\"limit\":$$BACKSTOP_PROCESS_LIMIT}" >/dev/null \
-            || echo "backstop: process failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "backstop: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ retry — failed/deferred → pending 재무장 (deferred 흡수에 필수).
+            # 한 사이트 실패가 다음 사이트를 막지 않는다 (|| 로그 후 계속).
+            curl -sf -X POST "http://abloqd:8080/sites/$$SITE/receipts/retry" \
+              -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+              -d '{"deploy_id":"","kind_filter":""}' >/dev/null \
+              || { echo "backstop: $$SITE retry failed"; true; }
+            # ④ process — pending 일괄 실행 (멱등, limit로 쿼터 보호)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/archive/process" \
+              -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+              -d "{\"limit\":$$BACKSTOP_PROCESS_LIMIT}" >/dev/null \
+              || { echo "backstop: $$SITE process failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -186,10 +231,16 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "crawl: login failed"; continue; }
-          # ② ingest — 닫힌 시간대 증분 수집 (멱등)
-          curl -sf -m 600 -X POST http://abloqd:8080/ingest/crawl \
-            -H "Authorization: Bearer $$TOKEN" >/dev/null \
-            || echo "crawl: ingest failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "crawl: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ ingest — 닫힌 시간대 증분 수집 (멱등, 사이트별 커서)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/ingest/crawl" \
+              -H "Authorization: Bearer $$TOKEN" >/dev/null \
+              || { echo "crawl: $$SITE ingest failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -218,11 +269,17 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "gsc: login failed"; continue; }
-          # ② ingest — 닫힌 일자 증분 수집 (멱등, inspect 항상 off)
-          curl -sf -m 600 -X POST http://abloqd:8080/ingest/gsc \
-            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
-            -d '{"inspect":false}' >/dev/null \
-            || echo "gsc: ingest failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "gsc: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ ingest — 닫힌 일자 증분 수집 (멱등, inspect 항상 off)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/ingest/gsc" \
+              -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+              -d '{"inspect":false}' >/dev/null \
+              || { echo "gsc: $$SITE ingest failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -251,10 +308,16 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "citation: login failed"; continue; }
-          # ② sample — budget 상한 1회전 (budget 0이면 no-op)
-          curl -sf -m 600 -X POST http://abloqd:8080/sample/citations \
-            -H "Authorization: Bearer $$TOKEN" >/dev/null \
-            || echo "citation: sample failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "citation: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ sample — budget 상한 1회전 (사이트 blog.yaml budget 0이면 no-op)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/sample/citations" \
+              -H "Authorization: Bearer $$TOKEN" >/dev/null \
+              || { echo "citation: $$SITE sample failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -286,11 +349,17 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "report: login failed"; continue; }
-          # ② generate — 직전 닫힌 월 리포트 생성·발행 (멱등)
-          curl -sf -m 600 -X POST http://abloqd:8080/reports/monthly \
-            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
-            -d '{"ym":""}' >/dev/null \
-            || echo "report: generate failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "report: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ generate — 직전 닫힌 월 리포트 생성·발행 (멱등, (site, ym) 독립)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/reports/monthly" \
+              -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+              -d '{"ym":""}' >/dev/null \
+              || { echo "report: $$SITE generate failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -321,11 +390,17 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "freshness: login failed"; continue; }
-          # ② scan — 신선도 초과 글 적재 (멱등, ym=''=직전 닫힌 월)
-          curl -sf -m 600 -X POST http://abloqd:8080/scans/freshness \
-            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
-            -d '{"ym":""}' >/dev/null \
-            || echo "freshness: scan failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "freshness: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ scan — 신선도 초과 글 적재 (멱등, ym=''=직전 닫힌 월)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/scans/freshness" \
+              -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+              -d '{"ym":""}' >/dev/null \
+              || { echo "freshness: $$SITE scan failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -355,10 +430,16 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "evidence: login failed"; continue; }
-          # ② scan — 무출처 주장·link rot 적재 (멱등, link check 포함이라 -m 600)
-          curl -sf -m 600 -X POST http://abloqd:8080/scans/evidence \
-            -H "Authorization: Bearer $$TOKEN" >/dev/null \
-            || echo "evidence: scan failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "evidence: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ scan — 무출처 주장·link rot 적재 (멱등, link check 포함이라 -m 600)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/scans/evidence" \
+              -H "Authorization: Bearer $$TOKEN" >/dev/null \
+              || { echo "evidence: $$SITE scan failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -387,10 +468,16 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "cluster: login failed"; continue; }
-          # ② scan — 내부 링크 위반 적재 (멱등)
-          curl -sf -m 600 -X POST http://abloqd:8080/scans/cluster \
-            -H "Authorization: Bearer $$TOKEN" >/dev/null \
-            || echo "cluster: scan failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "cluster: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ scan — 내부 링크 위반 적재 (멱등)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/scans/cluster" \
+              -H "Authorization: Bearer $$TOKEN" >/dev/null \
+              || { echo "cluster: $$SITE scan failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 
@@ -422,10 +509,16 @@ services:
             -H 'Content-Type: application/json' \
             -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
             | jq -r .access_token) || { echo "queue: login failed"; continue; }
-          # ② export — open 발급 + consumed 동기화 한 사이클 (멱등, git 작업 포함이라 -m 600)
-          curl -sf -m 600 -X POST http://abloqd:8080/queue/export \
-            -H "Authorization: Bearer $$TOKEN" >/dev/null \
-            || echo "queue: export failed (next cycle retries)"
+          # ② 사이트 목록 — 멀티사이트 fan-out은 셸 소관 (1 요청 = 1 사이트)
+          SITES=$$(curl -sf http://abloqd:8080/sites?active_filter=true \
+            -H "Authorization: Bearer $$TOKEN" | jq -r '.sites[].name') \
+            || { echo "queue: site list failed"; continue; }
+          for SITE in $$SITES; do
+            # ③ export — open 발급 + consumed 동기화 한 사이클 (멱등, git 작업 포함이라 -m 600)
+            curl -sf -m 600 -X POST "http://abloqd:8080/sites/$$SITE/queue/export" \
+              -H "Authorization: Bearer $$TOKEN" >/dev/null \
+              || { echo "queue: $$SITE export failed (next cycle retries)"; true; }
+          done
         done
     restart: unless-stopped
 

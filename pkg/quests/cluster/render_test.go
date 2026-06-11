@@ -25,8 +25,8 @@ func TestRender(t *testing.T) {
 		"no-isolated-post",
 		`"slug":"hub"`,
 		"abloq quest cluster submit --key en/posts/thin",
-		"순서 박제",   // _queue-protocol.md
-		"위반 확인",   // tasks.md
+		"순서 박제",    // _queue-protocol.md
+		"위반 확인",    // tasks.md
 		"큐레이션의 본질", // context.md
 	} {
 		if !strings.Contains(out, want) {

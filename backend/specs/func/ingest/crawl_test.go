@@ -59,9 +59,7 @@ func writeFixtures(t *testing.T) (string, string) {
 // ingest nothing (zero duplicate accumulation).
 func TestCrawl(t *testing.T) {
 	repo, logs := writeFixtures(t)
-	t.Setenv("BLOG_REPO_PATH", repo)
-	t.Setenv("CF_LOG_SOURCE", logs)
-	res, err := Crawl(CrawlRequest{CursorsJSON: "[]"})
+	res, err := Crawl(CrawlRequest{RepoPath: repo, LogSource: logs, CursorsJSON: "[]"})
 	if err != nil {
 		t.Fatalf("Crawl: %v", err)
 	}
@@ -89,7 +87,7 @@ func TestCrawl(t *testing.T) {
 		t.Errorf("cursors = %+v", cursors)
 	}
 
-	again, err := Crawl(CrawlRequest{CursorsJSON: string(res.CursorsJSON)})
+	again, err := Crawl(CrawlRequest{RepoPath: repo, LogSource: logs, CursorsJSON: string(res.CursorsJSON)})
 	if err != nil {
 		t.Fatalf("re-Crawl: %v", err)
 	}
@@ -98,17 +96,14 @@ func TestCrawl(t *testing.T) {
 	}
 }
 
-// TestCrawlEnv pins the env contract: missing CF_LOG_SOURCE/BLOG_REPO_PATH
-// fail, and CF_LOG_MARGIN_HOURS overrides the 2h default.
+// TestCrawlEnv pins the site-row/env contract: a missing log source or
+// repo path fails, and CF_LOG_MARGIN_HOURS overrides the 2h default.
 func TestCrawlEnv(t *testing.T) {
-	t.Setenv("CF_LOG_SOURCE", "")
-	t.Setenv("BLOG_REPO_PATH", "")
 	if _, err := Crawl(CrawlRequest{CursorsJSON: "[]"}); err == nil {
-		t.Error("missing CF_LOG_SOURCE accepted")
+		t.Error("missing cf_log_source accepted")
 	}
-	t.Setenv("CF_LOG_SOURCE", t.TempDir())
-	if _, err := Crawl(CrawlRequest{CursorsJSON: "[]"}); err == nil {
-		t.Error("missing BLOG_REPO_PATH accepted")
+	if _, err := Crawl(CrawlRequest{LogSource: t.TempDir(), CursorsJSON: "[]"}); err == nil {
+		t.Error("missing repo_path accepted")
 	}
 	t.Setenv("CF_LOG_MARGIN_HOURS", "24")
 	if got := marginHours(); got != 24*60*60*1e9 {

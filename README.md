@@ -102,11 +102,11 @@ abloq/
 # backend/ SSOT에서 Go+Gin 코드를 projection으로 생성
 yongol generate backend/specs backend/arts
 
-# 자격증명 작성 후 기동 (POSTGRES_PASSWORD·JWT_SECRET·BLOG_REPO_PATH 등은 env로만 주입)
+# 자격증명 작성 후 기동 (POSTGRES_PASSWORD·JWT_SECRET·SITES_YAML_PATH 등은 env로만 주입)
 docker compose -f deploy/backend/docker-compose.yaml up -d --build
 ```
 
-백엔드를 켜지 않아도 모든 검출은 CLI로 돌아간다 — `abloq scan freshness`, `abloq scan evidence`, `abloq scan cluster`, `abloq report monthly` 등. blog.yaml과 abloqd manifest는 별개의 SSOT이며, abloqd는 마운트된 저장소의 blog.yaml을 읽어 언어·섹션·URL 계약과 GEO 임계를 파라미터로 쓴다.
+백엔드를 켜지 않아도 모든 검출은 CLI로 돌아간다 — `abloq scan freshness`, `abloq scan evidence`, `abloq scan cluster`, `abloq report monthly` 등. 한 인스턴스가 여러 사이트를 운용한다 — 사이트 목록은 `sites.yaml` 선언 SSOT(단일 사이트는 `BLOG_REPO_PATH`만으로 하위호환), 도메인 API는 `/sites/{site}/…` 스코프. blog.yaml과 abloqd manifest는 별개의 SSOT이며, abloqd는 마운트된 각 사이트 저장소의 blog.yaml을 읽어 언어·섹션·URL 계약과 GEO 임계를 파라미터로 쓴다.
 
 ## 에이전트 퀘스트 (5종)
 
@@ -122,9 +122,9 @@ docker compose -f deploy/backend/docker-compose.yaml up -d --build
 
 치즈 방어 원칙(전 퀘스트 공통): front matter 보존, 게이트 판정과 저장소 반영의 바이트 일치, 큐 아이템 범위 밖 파일 변경 금지, 본문 변경 퀘스트(2·3)는 기존 주장 삭제 금지(인사이트 명세 보존), 구조 변환 퀘스트(1)는 본문 무손실(multiset). 외부 부수효과(아카이브·색인)는 백엔드 영수증으로 처리하며, **에이전트는 외부 API를 직접 치지 않는다.**
 
-## 로드맵 — v0.2.0 (계획)
+## v0.2.0 변경점
 
-도그푸드 #0(parkjunwoo.com 역이식) 검토에서 나온 채택 차단 요소와 운용 확장 요구를 묶은 다음 마일스톤이다.
+도그푸드 #0(parkjunwoo.com 역이식) 검토에서 나온 채택 차단 요소와 운용 확장 요구를 묶은 마일스톤이다.
 
 - **llms.txt 큐레이션 등급화 + 옵트아웃.** `geo.llms_txt`를 `auto | manual | off` 또는 객체 선언으로 확장 — `manual`이면 손큐레이션본이 `generate`/`check`와 깨끗이 공존하고, `auto`는 기본 언어 단일 스코프·포지셔닝 헤더·핀 엔트리·섹션 라벨·요약 절단으로 큐레이션 등급이 된다.
 - **OG 이미지 provider 선택형.** `abloq image og`에 AI 이미지 provider(Gemini 등)를 opt-in으로 추가 — blog.yaml에 사이트 공통 프롬프트·모델과 안(variant)별 프리셋을 선언하고, 기본 1안·선택 시 N개 안을 후보로 생성해 검토 후 채택한다. AI 생성물은 파생물이 아닌 1회성 자산 — `generate`/`check`에는 절대 들어가지 않는다(결정론 경계 유지).

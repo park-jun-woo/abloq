@@ -1,0 +1,58 @@
+# abloqd 멀티사이트 선언 SSOT (Phase020)
+#
+# 사용: cp sites.yaml.example sites.yaml 후 사이트별 값 기입.
+# compose가 이 파일을 /etc/abloqd/sites.yaml 로 마운트하고
+# SITES_YAML_PATH가 그 경로를 가리킨다. abloqd는 기동 시 이 파일을
+# strict 파싱·검증해 sites 테이블에 upsert하고, 파일에서 사라진 사이트는
+# active=false로 내린다(행 삭제 없음 — FK 이력 보존). 진단이 1건이라도
+# 있으면 기동을 거부한다.
+#
+# 규약:
+#   - name: URL-safe 슬러그 (소문자·숫자·하이픈) — API 경로 /sites/<name>/…
+#     의 {site} 파라미터다. 이름을 바꾸면 다른 사이트가 된다(이력 분리).
+#   - repo_path: 컨테이너 안 절대경로. 마운트 컨벤션은 /blogs/<name> 권장
+#     (compose 참조) — 코드는 선언된 절대경로만 신뢰한다.
+#   - 파일 "경로"는 시크릿이 아니다(내용이 시크릿 — ro 마운트로 공급).
+#     단 indexnow_key는 값 자체가 키이므로 sites.yaml 파일 권한을 .env와
+#     동일하게 관리한다. API 응답에는 절대 나가지 않는다.
+#   - 비운 항목은 인스턴스 전역 env로 fallback: indexnow_key → INDEXNOW_KEY,
+#     gsc.sa_json_path → GSC_SA_JSON(인라인)/GSC_SA_JSON_PATH. 사이트 행 값이
+#     있으면 항상 행 값이 이긴다(전역 인라인에 가려지지 않는다).
+#   - queue_export.repo_url이 빈 사이트는 POST /sites/<name>/queue/export가
+#     500을 반환할 뿐 다른 기능은 영향 없다. cf_log_source가 빈 사이트는
+#     POST /sites/<name>/ingest/crawl이 500. (기존 단일 사이트의 "env 미설정
+#     = 500" 동작의 사이트 단위화)
+#   - AWS·Wayback·엔진 키·JWT 등 계정 자격증명은 지금처럼 env 전역 공유다
+#     (v1 — 사이트별 자격증명 분리는 후속).
+#
+# 하위호환: SITES_YAML_PATH를 설정하지 않고 BLOG_REPO_PATH만 주면 기동 시
+# name=default 사이트 1개가 기존 env 8종(BLOG_REPO_PATH, QUEUE_EXPORT_REPO_URL
+# ·AUTHOR·AUTHOR_EMAIL, GSC_SITE_URL, GSC_SA_JSON_PATH, CF_LOG_SOURCE,
+# INDEXNOW_KEY)으로 합성된다 — 기존 배포는 env만으로 계속 동작하되 API 경로는
+# /sites/default/… 로 이동한다 (v0.2.0 호환 깨짐, docs/operations.md 참조).
+
+sites:
+  - name: parkjunwoo
+    repo_path: /blogs/parkjunwoo          # compose가 마운트한 블로그 저장소
+    queue_export:
+      repo_url: git@github.com:user/parkjunwoo.com.git
+      author: abloqd-bot
+      author_email: abloqd-bot@abloq.local
+    gsc:
+      site_url: sc-domain:parkjunwoo.com  # 또는 https://parkjunwoo.com/ (URL-prefix)
+      sa_json_path: /etc/abloqd/gsc-sa.json
+    cf_log_source: s3://my-cf-logs/parkjunwoo/   # 또는 로컬 디렉토리
+    indexnow_key: ""                      # 비우면 전역 INDEXNOW_KEY fallback
+    # active 생략 = true. false로 두면 행은 남되 서빙이 멎는다(404).
+
+  - name: second-blog
+    repo_path: /blogs/second-blog
+    queue_export:
+      repo_url: git@github.com:user/second-blog.git
+      author: abloqd-bot
+      author_email: abloqd-bot@abloq.local
+    gsc:
+      site_url: https://second.example.com/
+      sa_json_path: /etc/abloqd/gsc-sa-second.json
+    cf_log_source: s3://my-cf-logs/second-blog/
+    indexnow_key: "second-blog-indexnow-key"

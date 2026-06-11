@@ -17,9 +17,14 @@ import (
 
 // @func monthly
 // @error 500
-// @description Assemble the monthly visibility report (crawl x index x citation joined per article, month-over-month trend, unknown bots, queue intake) from the ym-anchored DB aggregates riding in as JSON scalars, render markdown + JSON via pkg/visibility/report (deterministic — no clock value in the body) and publish the markdown copy as reports/<ym>.md to the blog repository through pkg/queueio (QUEUE_EXPORT_* env, dedicated -reports work clone, idempotent no-op commit); the DB row stays the lookup truth, the git commit is the publication copy
+// @description Assemble the monthly visibility report for one site (crawl x index x citation joined per article, month-over-month trend, unknown bots, queue intake) from the ym-anchored site-scoped DB aggregates riding in as JSON scalars, render markdown + JSON via pkg/visibility/report (deterministic — no clock value in the body) and publish the markdown copy as reports/<ym>.md to the site's blog repository through pkg/queueio (repo URL and author from the site row, dedicated per-site -reports work clone, idempotent no-op commit); the DB row stays the lookup truth, the git commit is the publication copy
 
 type MonthlyRequest struct {
+	RepoPath      string
+	SiteName      string
+	RepoURL       string
+	Author        string
+	AuthorEmail   string
 	Ym            string
 	PostsJSON     string
 	BotsJSON      string
@@ -43,14 +48,18 @@ type MonthlyResponse struct {
 // Monthly is the thin @call wrapper around pkg/visibility/report.Build: JSON
 // translation, the default-ym resolution (the same last-closed-month (UTC)
 // definition the window queries apply to ym=”) and the git publication.
-// The page->article attribution uses the repository URL map and the weights
-// come from blog.yaml — both single sources live outside the database.
+// The repository path and the publication repo URL/author ride in from the
+// site row (multisite); the page->article attribution uses the repository
+// URL map and the weights come from blog.yaml — both single sources live
+// outside the database.
 func Monthly(req MonthlyRequest) (MonthlyResponse, error) {
-	root := os.Getenv("BLOG_REPO_PATH")
-	if root == "" {
-		return MonthlyResponse{}, errors.New("BLOG_REPO_PATH is not set")
+	if req.RepoPath == "" {
+		return MonthlyResponse{}, errors.New("site repo_path is not set")
 	}
-	b, diags, err := blogyaml.Load(filepath.Join(root, "blog.yaml"))
+	if req.SiteName == "" {
+		return MonthlyResponse{}, errors.New("site name is not set")
+	}
+	b, diags, err := blogyaml.Load(filepath.Join(req.RepoPath, "blog.yaml"))
 	if err != nil {
 		return MonthlyResponse{}, err
 	}
@@ -61,7 +70,7 @@ func Monthly(req MonthlyRequest) (MonthlyResponse, error) {
 	if err != nil {
 		return MonthlyResponse{}, err
 	}
-	urls, err := cflog.BuildURLMap(root, b)
+	urls, err := cflog.BuildURLMap(req.RepoPath, b)
 	if err != nil {
 		return MonthlyResponse{}, err
 	}
@@ -71,7 +80,8 @@ func Monthly(req MonthlyRequest) (MonthlyResponse, error) {
 	}
 	r := preport.Build(in)
 	md := preport.Markdown(r)
-	cfg, err := pqueueio.PublishConfigFromEnv()
+	cfg, err := pqueueio.NewPublishConfig(req.RepoURL, filepath.Join(workdirBase(), req.SiteName),
+		req.Author, req.AuthorEmail)
 	if err != nil {
 		return MonthlyResponse{}, err
 	}
@@ -86,6 +96,17 @@ func Monthly(req MonthlyRequest) (MonthlyResponse, error) {
 		Articles:   int64(len(r.Rows)),
 		Published:  published,
 	}, nil
+}
+
+// workdirBase resolves the work-clone base directory: QUEUE_EXPORT_WORKDIR
+// when set (test harnesses point it at a temp dir), otherwise the image
+// default — the same convention as the queue exporter, NewPublishConfig
+// then separates the publisher clone with the "-reports" suffix.
+func workdirBase() string {
+	if v := os.Getenv("QUEUE_EXPORT_WORKDIR"); v != "" {
+		return v
+	}
+	return "/var/lib/abloqd/queue-export"
 }
 
 func decodeInputs(req MonthlyRequest, in *preport.Input) error {

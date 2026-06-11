@@ -73,14 +73,19 @@ while [ $# -gt 0 ]; do
 done
 case "$url" in
   */auth/login) printf '%s' '{"access_token":"smoke-token"}';;
+  */sites?active_filter=true) printf '%s' '{"sites":[{"name":"default"}]}';;
 esac
 exit 0
 EOF
 
 cat > "$STUB/jq" <<'EOF'
 #!/bin/sh
-# emulate `jq -r .access_token`
-sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p'
+# emulate `jq -r .access_token` and `jq -r '.sites[].name'`
+case "$2" in
+  .access_token) sed -n 's/.*"access_token"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p';;
+  .sites*) sed -n 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p';;
+  *) cat;;
+esac
 EOF
 
 cat > "$STUB/sleep" <<'EOF'
@@ -100,17 +105,20 @@ import json, os, subprocess, sys
 cfg_path, stub, work = sys.argv[1], sys.argv[2], sys.argv[3]
 cfg = json.load(open(cfg_path))
 
-# expected follow-up endpoints (in call order, after the login call)
+# expected follow-up endpoints (in call order, after the login call).
+# Phase020: every cron fans out over GET /sites?active_filter=true and calls
+# the per-site op for each name — the stub registry answers one site
+# (`default`), so the expected calls are the list lookup plus one site round.
 EXPECT = {
-    "archiver-backstop": ["/receipts/retry", "/archive/process"],
-    "crawl-ingest":      ["/ingest/crawl"],
-    "gsc-ingest":        ["/ingest/gsc"],
-    "citation-sample":   ["/sample/citations"],
-    "report-monthly":    ["/reports/monthly"],
-    "freshness-scan":    ["/scans/freshness"],
-    "evidence-scan":     ["/scans/evidence"],
-    "cluster-scan":      ["/scans/cluster"],
-    "queue-export":      ["/queue/export"],
+    "archiver-backstop": ["/sites?active_filter=true", "/sites/default/receipts/retry", "/sites/default/archive/process"],
+    "crawl-ingest":      ["/sites?active_filter=true", "/sites/default/ingest/crawl"],
+    "gsc-ingest":        ["/sites?active_filter=true", "/sites/default/ingest/gsc"],
+    "citation-sample":   ["/sites?active_filter=true", "/sites/default/sample/citations"],
+    "report-monthly":    ["/sites?active_filter=true", "/sites/default/reports/monthly"],
+    "freshness-scan":    ["/sites?active_filter=true", "/sites/default/scans/freshness"],
+    "evidence-scan":     ["/sites?active_filter=true", "/sites/default/scans/evidence"],
+    "cluster-scan":      ["/sites?active_filter=true", "/sites/default/scans/cluster"],
+    "queue-export":      ["/sites?active_filter=true", "/sites/default/queue/export"],
 }
 
 services = cfg["services"]

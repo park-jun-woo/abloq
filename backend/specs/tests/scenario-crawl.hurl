@@ -10,6 +10,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -20,7 +22,7 @@ token: jsonpath "$.access_token"
 
 # Ingest 1: both closed-hour fixture files are aggregated wholesale.
 # hits = 5 article hits total (4 html + 1 md).
-POST {{host}}/ingest/crawl
+POST {{host}}/sites/{{site}}/ingest/crawl
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -28,7 +30,7 @@ jsonpath "$.files" == 2
 jsonpath "$.hits" == 5
 
 # All rows, canonical order (hit_date, bot, lang, section, slug)
-GET {{host}}/crawl-hits
+GET {{host}}/sites/{{site}}/crawl-hits
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -48,7 +50,7 @@ jsonpath "$.hits[2].hits" == 2
 jsonpath "$.hits[2].md_hits" == 1
 
 # Filtered lookup: post-a only — the .md twin accumulated as md_hits
-GET {{host}}/crawl-hits?lang=ko&section=tech&slug=post-a
+GET {{host}}/sites/{{site}}/crawl-hits?lang=ko&section=tech&slug=post-a
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -57,20 +59,20 @@ jsonpath "$.hits[0].hits" == 2
 jsonpath "$.hits[0].md_hits" == 1
 
 # Date-range filters: the fixture hits are all on 2026-06-01 (UTC)
-GET {{host}}/crawl-hits?from_date=2026-06-02
+GET {{host}}/sites/{{site}}/crawl-hits?from_date=2026-06-02
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.hits" count == 0
 
-GET {{host}}/crawl-hits?from_date=2026-06-01&to_date=2026-06-01
+GET {{host}}/sites/{{site}}/crawl-hits?from_date=2026-06-01&to_date=2026-06-01
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.hits" count == 3
 
 # Ingest 2: the cursor advanced past both closed hours — nothing to ingest.
-POST {{host}}/ingest/crawl
+POST {{host}}/sites/{{site}}/ingest/crawl
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -78,7 +80,7 @@ jsonpath "$.files" == 0
 jsonpath "$.hits" == 0
 
 # ... and zero duplicate accumulation: every count is unchanged.
-GET {{host}}/crawl-hits
+GET {{host}}/sites/{{site}}/crawl-hits
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
   title: Abloqd
-  description: abloq operations backend — content index, receipts, queues, visibility metrics
-  version: 0.1.0
+  description: abloq operations backend — content index, receipts, queues, visibility metrics (multisite — one instance serves every declared site)
+  version: 0.2.0
 servers:
   - url: http://localhost:8080
 security:
@@ -20,10 +20,26 @@ components:
       properties:
         error: { type: string }
         code: { type: string }
+    Site:
+      type: object
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        repo_path: { type: string }
+        queue_export_repo: { type: string, description: "queue export origin URL — empty disables the site's queue export" }
+        queue_export_author: { type: string }
+        queue_export_author_email: { type: string }
+        gsc_site: { type: string, description: "Search Console property — URL-prefix or sc-domain:" }
+        gsc_sa_path: { type: string, description: "mounted service-account JSON path — empty falls back to the global env" }
+        cf_log_source: { type: string }
+        active: { type: boolean }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
     Receipt:
       type: object
       properties:
         id: { type: integer, format: int64 }
+        site_id: { type: integer, format: int64 }
         deploy_id: { type: string }
         kind: { type: string }
         target: { type: string }
@@ -33,6 +49,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
+        site_id: { type: integer, format: int64 }
         kind: { type: string }
         slug: { type: string }
         lang: { type: string }
@@ -44,6 +61,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
+        site_id: { type: integer, format: int64 }
         lang: { type: string }
         section: { type: string }
         slug: { type: string }
@@ -60,6 +78,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
+        site_id: { type: integer, format: int64 }
         hit_date: { type: string, format: date-time }
         bot: { type: string }
         lang: { type: string }
@@ -72,6 +91,7 @@ components:
       type: object
       properties:
         id: { type: integer, format: int64 }
+        site_id: { type: integer, format: int64 }
         lang: { type: string }
         section: { type: string }
         slug: { type: string }
@@ -122,11 +142,47 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /sync:
+  /sites:
+    get:
+      operationId: ListSites
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: active_filter
+          in: query
+          required: false
+          schema: { type: string, enum: ["", "true", "false"] }
+      responses:
+        '200':
+          description: OK — the declared sites of this instance (sites.yaml SSOT, upserted at boot)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sites:
+                    type: array
+                    items: { $ref: '#/components/schemas/Site' }
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+  /sites/{site}/sync:
     post:
       operationId: Sync
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -141,16 +197,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /hooks/deployed:
+  /sites/{site}/hooks/deployed:
     post:
       operationId: HookDeployed
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -177,16 +243,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /archive/process:
+  /sites/{site}/archive/process:
     post:
       operationId: ProcessArchive
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -213,16 +289,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /receipts/retry:
+  /sites/{site}/receipts/retry:
     post:
       operationId: RetryReceipts
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -247,17 +333,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /receipts:
+  /sites/{site}/receipts:
     get:
       operationId: ListReceipts
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: target
           in: query
           required: false
@@ -290,16 +385,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /scans/freshness:
+  /sites/{site}/scans/freshness:
     post:
       operationId: ScanFreshness
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -323,16 +428,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /scans/evidence:
+  /sites/{site}/scans/evidence:
     post:
       operationId: ScanEvidence
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -347,16 +462,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /scans/cluster:
+  /sites/{site}/scans/cluster:
     post:
       operationId: ScanCluster
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -371,16 +496,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /queue/export:
+  /sites/{site}/queue/export:
     post:
       operationId: ExportQueue
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -396,17 +531,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /queue:
+  /sites/{site}/queue:
     get:
       operationId: ListQueue
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: kind
           in: query
           required: false
@@ -431,16 +575,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /ingest/crawl:
+  /sites/{site}/ingest/crawl:
     post:
       operationId: IngestCrawl
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -456,17 +610,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /crawl-hits:
+  /sites/{site}/crawl-hits:
     get:
       operationId: ListCrawlHits
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: lang
           in: query
           required: false
@@ -503,16 +666,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /ingest/gsc:
+  /sites/{site}/ingest/gsc:
     post:
       operationId: IngestGSC
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -539,16 +712,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /citation-queries:
+  /sites/{site}/citation-queries:
     post:
       operationId: CreateCitationQuery
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -580,6 +763,11 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
@@ -590,6 +778,10 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: slug
           in: query
           required: false
@@ -614,17 +806,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /citation-queries/{id}:
+  /sites/{site}/citation-queries/{id}:
     delete:
       operationId: DeleteCitationQuery
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: id
           in: path
           required: true
@@ -640,7 +841,7 @@ paths:
                   id: { type: integer, format: int64 }
                   active: { type: boolean }
         '404':
-          description: Not found
+          description: Not found — unknown query id, unregistered or deactivated site
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -654,11 +855,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /sample/citations:
+  /sites/{site}/sample/citations:
     post:
       operationId: SampleCitations
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -674,17 +880,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /citations:
+  /sites/{site}/citations:
     get:
       operationId: ListCitations
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: slug
           in: query
           required: false
@@ -705,16 +920,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /reports/monthly:
+  /sites/{site}/reports/monthly:
     post:
       operationId: GenerateMonthlyReport
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       requestBody:
         required: true
         content:
@@ -726,7 +951,7 @@ paths:
                 ym: { type: string, maxLength: 7, description: "report month YYYY-MM — empty string means the last closed month (UTC, cron default); an explicit ym is clock-free" }
       responses:
         '200':
-          description: OK — report upserted for the ym, markdown copy pushed when changed
+          description: OK — report upserted for the (site, ym), markdown copy pushed when changed
           content:
             application/json:
               schema:
@@ -740,17 +965,26 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
         '500':
           description: Internal Server Error
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /reports/monthly/{ym}:
+  /sites/{site}/reports/monthly/{ym}:
     get:
       operationId: GetMonthlyReport
       security:
         - bearerAuth: []
       parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
         - name: ym
           in: path
           required: true
@@ -767,7 +1001,7 @@ paths:
                   markdown: { type: string }
                   report_json: { type: string, description: "the machine-readable report as a JSON string, byte-identical to what the generator rendered" }
         '404':
-          description: Not found
+          description: Not found — unknown (site, ym) report, unregistered or deactivated site
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
@@ -781,11 +1015,16 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }
-  /posts:
+  /sites/{site}/posts:
     get:
       operationId: ListPosts
       security:
         - bearerAuth: []
+      parameters:
+        - name: site
+          in: path
+          required: true
+          schema: { type: string, minLength: 1 }
       responses:
         '200':
           description: OK
@@ -799,6 +1038,11 @@ paths:
                     items: { $ref: '#/components/schemas/Post' }
         '403':
           description: Forbidden
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+        '404':
+          description: Not found — unregistered or deactivated site
           content:
             application/json:
               schema: { $ref: '#/components/schemas/ErrorResponse' }

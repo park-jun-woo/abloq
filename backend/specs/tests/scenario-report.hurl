@@ -13,6 +13,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -23,7 +25,7 @@ token: jsonpath "$.access_token"
 
 # Generate: explicit ym — both fixture posts become report rows. The first
 # generation pushes the publication copy (published=true).
-POST {{host}}/reports/monthly
+POST {{host}}/sites/{{site}}/reports/monthly
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -43,7 +45,7 @@ jsonpath "$.published" == true
 # Weighted priority (defaults 3/1/1/2): post-a 3*3+1*7+1*120 = 136,
 # post-b 1*4+1*40 = 44. March seeds (GPTBot 5, GSC 60/1) fill the trend
 # column. Citation and queue layers read zero by construction.
-GET {{host}}/reports/monthly/{{report_ym}}
+GET {{host}}/sites/{{site}}/reports/monthly/{{report_ym}}
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -62,7 +64,7 @@ jsonpath "$.report_json" contains "\"queue\":[]"
 
 # Regenerate the same ym: the upsert converges and the identical markdown
 # makes the git publication a no-op (published=false) — idempotence.
-POST {{host}}/reports/monthly
+POST {{host}}/sites/{{site}}/reports/monthly
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -75,14 +77,14 @@ jsonpath "$.articles" == 2
 jsonpath "$.published" == false
 
 # ... and the stored row still matches (regeneration is byte-identical)
-GET {{host}}/reports/monthly/{{report_ym}}
+GET {{host}}/sites/{{site}}/reports/monthly/{{report_ym}}
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.markdown" contains "| ko/tech/post-a | 2026-06-01 | 7 | 0 | 3 | 2 | 120 | 8 | 0 | 136 |"
 
 # A month nobody generated is a plain 404 (guard path)
-GET {{host}}/reports/monthly/{{missing_ym}}
+GET {{host}}/sites/{{site}}/reports/monthly/{{missing_ym}}
 Authorization: Bearer {{token}}
 [Options]
 variable: missing_ym="1999-01"

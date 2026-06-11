@@ -6,6 +6,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -15,7 +17,7 @@ HTTP 200
 token: jsonpath "$.access_token"
 
 # Webhook: 2 changed URLs → 6 pending receipts (2 URLs × 3 kinds), 202 fast
-POST {{host}}/hooks/deployed
+POST {{host}}/sites/{{site}}/hooks/deployed
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -30,14 +32,14 @@ HTTP 202
 jsonpath "$.planned" == 6
 
 # All 6 receipts are pending — no external call happened yet
-GET {{host}}/receipts?deploy_id=dep-arch-1&status=pending
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-1&status=pending
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.receipts" count == 6
 
 # Process: external calls (stub) — every receipt lands done
-POST {{host}}/archive/process
+POST {{host}}/sites/{{site}}/archive/process
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -49,7 +51,7 @@ jsonpath "$.processed" >= 6
 jsonpath "$.failed" == 0
 jsonpath "$.deferred" == 0
 
-GET {{host}}/receipts?deploy_id=dep-arch-1&status=done
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-1&status=done
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -58,7 +60,7 @@ jsonpath "$.receipts[0].deploy_id" == "dep-arch-1"
 jsonpath "$.receipts[0].status" == "done"
 
 # Idempotent re-webhook: same deploy_id + same URLs → nothing new planned
-POST {{host}}/hooks/deployed
+POST {{host}}/sites/{{site}}/hooks/deployed
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -73,14 +75,14 @@ HTTP 202
 jsonpath "$.planned" == 0
 
 # ... and no receipt was duplicated or knocked back to pending
-GET {{host}}/receipts?deploy_id=dep-arch-1
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-1
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.receipts" count == 6
 
 # Partial failure: the stub returns 5xx for wayback saves of "boom" targets
-POST {{host}}/hooks/deployed
+POST {{host}}/sites/{{site}}/hooks/deployed
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -91,7 +93,7 @@ HTTP 202
 [Asserts]
 jsonpath "$.planned" == 3
 
-POST {{host}}/archive/process
+POST {{host}}/sites/{{site}}/archive/process
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -102,21 +104,21 @@ HTTP 200
 jsonpath "$.failed" == 1
 
 # wayback failed, indexnow + gsc_index done — failure is isolated per target
-GET {{host}}/receipts?deploy_id=dep-arch-2&status=failed
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-2&status=failed
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.receipts" count == 1
 jsonpath "$.receipts[0].kind" == "wayback"
 
-GET {{host}}/receipts?deploy_id=dep-arch-2&status=done
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-2&status=done
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.receipts" count == 2
 
 # Retry rearms the failed wayback receipt back to pending
-POST {{host}}/receipts/retry
+POST {{host}}/sites/{{site}}/receipts/retry
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -130,7 +132,7 @@ HTTP 200
 # row below via the deploy_id-filtered lookup
 jsonpath "$.pending" >= 1
 
-GET {{host}}/receipts?deploy_id=dep-arch-2&status=pending
+GET {{host}}/sites/{{site}}/receipts?deploy_id=dep-arch-2&status=pending
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

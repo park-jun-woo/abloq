@@ -9,6 +9,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -18,14 +20,14 @@ HTTP 200
 token: jsonpath "$.access_token"
 
 # Sync the fixture repository — the scanner reads the posts index
-POST {{host}}/sync
+POST {{host}}/sites/{{site}}/sync
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.synced" == 2
 
 # Scan: both fixture posts exceeded the 1-day freshness threshold
-POST {{host}}/scans/freshness
+POST {{host}}/sites/{{site}}/scans/freshness
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -38,7 +40,7 @@ jsonpath "$.detected" == 2
 # Cold-start priority: crawl_hits is empty, so the queue order equals the
 # posts date order, newest first — post-b (2026-06-03, epoch-day 20607)
 # before post-a (2026-06-01, epoch-day 20605).
-GET {{host}}/queue?status=open
+GET {{host}}/sites/{{site}}/queue?status=open
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -51,7 +53,7 @@ jsonpath "$.items[0].kind" == "refresh"
 jsonpath "$.items[0].status" == "open"
 
 # Re-scan: detection repeats but the insert is duplicate-free
-POST {{host}}/scans/freshness
+POST {{host}}/sites/{{site}}/scans/freshness
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -62,14 +64,14 @@ HTTP 200
 jsonpath "$.detected" == 2
 
 # ... zero duplicate rows were enqueued
-GET {{host}}/queue?kind=refresh
+GET {{host}}/sites/{{site}}/queue?kind=refresh
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.items" count == 2
 
 # Export: both open items land in the bare repo as quests/queue/*.yaml
-POST {{host}}/queue/export
+POST {{host}}/sites/{{site}}/queue/export
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -77,20 +79,20 @@ jsonpath "$.exported" == 2
 jsonpath "$.consumed" == 0
 
 # Both rows transitioned open → exported
-GET {{host}}/queue?status=open
+GET {{host}}/sites/{{site}}/queue?status=open
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.items" count == 0
 
-GET {{host}}/queue?status=exported
+GET {{host}}/sites/{{site}}/queue?status=exported
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.items" count == 2
 
 # Re-export: identical content is a no-op (no commit, nothing transitions)
-POST {{host}}/queue/export
+POST {{host}}/sites/{{site}}/queue/export
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

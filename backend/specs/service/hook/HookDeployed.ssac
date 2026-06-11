@@ -4,12 +4,15 @@ import "github.com/park-jun-woo/abloqd/internal/archive"
 
 // Deploy webhook — records status=pending receipts for every (kind, target)
 // pair of the changed URLs and returns 202 immediately. No external call here:
-// POST /archive/process executes the pending queue. Idempotent per deploy_id —
-// PlanDeploy filters out pairs that already hold a receipt for this deploy.
+// POST /sites/{site}/archive/process executes the pending queue. Idempotent
+// per deploy_id — PlanDeploy filters out pairs that already hold a receipt
+// for this deploy (site-scoped: the receipts ride under the site's rows).
 
 // @auth "HookDeployed" "receipt" {} "Forbidden" 403
-// @get string receiptsJson = Receipt.AggByDeployJson({DeployID: request.deploy_id})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string receiptsJson = Receipt.AggByDeployJson({SiteID: site.ID, DeployID: request.deploy_id})
 // @call PlanDeployResponse plan = archive.PlanDeploy({DeployID: request.deploy_id, Changed: request.changed, ReceiptsJSON: receiptsJson})
-// @put Receipt.UpsertFromJson({ItemsJson: plan.ItemsJSON})
+// @put Receipt.UpsertFromJson({SiteID: site.ID, ItemsJson: plan.ItemsJSON})
 // @response { planned: plan.Planned }
 func HookDeployed() {}

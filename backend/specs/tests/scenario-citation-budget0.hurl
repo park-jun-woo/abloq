@@ -9,6 +9,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -18,7 +20,7 @@ HTTP 200
 token: jsonpath "$.access_token"
 
 # An active query exists...
-POST {{host}}/citation-queries
+POST {{host}}/sites/{{site}}/citation-queries
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -32,7 +34,7 @@ HTTP 201
 jsonpath "$.active" == true
 
 # ... and the engines are wired, but budget 0 disables the round.
-POST {{host}}/sample/citations
+POST {{host}}/sites/{{site}}/sample/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -40,7 +42,7 @@ jsonpath "$.engines" == 3
 jsonpath "$.sampled" == 0
 
 # Nothing was recorded.
-GET {{host}}/citations
+GET {{host}}/sites/{{site}}/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

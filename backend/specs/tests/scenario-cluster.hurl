@@ -23,6 +23,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -32,7 +34,7 @@ HTTP 200
 token: jsonpath "$.access_token"
 
 # Scan: exactly the 4 violating articles are detected and enqueued
-POST {{host}}/scans/cluster
+POST {{host}}/sites/{{site}}/scans/cluster
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -40,7 +42,7 @@ jsonpath "$.detected" == 4
 
 # The queue holds one open kind=cluster item per violating article —
 # priority = violations + candidates (never now-derived), hub absent
-GET {{host}}/queue?kind=cluster
+GET {{host}}/sites/{{site}}/queue?kind=cluster
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -59,14 +61,14 @@ jsonpath "$.items[*].slug" includes "thin"
 jsonpath "$.items[*].slug" not includes "hub"
 
 # Re-scan: detection repeats but the insert is duplicate-free
-POST {{host}}/scans/cluster
+POST {{host}}/sites/{{site}}/scans/cluster
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 4
 
 # ... zero duplicate rows were enqueued
-GET {{host}}/queue?kind=cluster
+GET {{host}}/sites/{{site}}/queue?kind=cluster
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -74,7 +76,7 @@ jsonpath "$.items" count == 4
 
 # Export: the 4 open items land in the bare repo as quests/queue/*.yaml —
 # the script leg then checks every cluster file carries the candidates key
-POST {{host}}/queue/export
+POST {{host}}/sites/{{site}}/queue/export
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -82,14 +84,14 @@ jsonpath "$.exported" == 4
 jsonpath "$.consumed" == 0
 
 # All rows transitioned open → exported
-GET {{host}}/queue?status=open
+GET {{host}}/sites/{{site}}/queue?status=open
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.items" count == 0
 
 # Re-export: identical content is a no-op
-POST {{host}}/queue/export
+POST {{host}}/sites/{{site}}/queue/export
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

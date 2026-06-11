@@ -2,10 +2,12 @@ package service
 
 // Report lookup — the reports row is the single read truth (the git commit
 // is a publication copy). ym is a string path parameter (YYYY-MM); an
-// unknown month is a plain 404, no format guessing.
+// unknown (site, ym) is a plain 404, no format guessing.
 
 // @auth "GetMonthlyReport" "report" {} "Forbidden" 403
-// @get Report stored = Report.FindByYm({Ym: request.ym})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get Report stored = Report.FindByYm({SiteID: site.ID, Ym: request.ym})
 // @empty stored "Report not found"
 // @response { ym: stored.Ym, markdown: stored.Markdown, report_json: stored.ReportJson }
 func GetMonthlyReport() {}

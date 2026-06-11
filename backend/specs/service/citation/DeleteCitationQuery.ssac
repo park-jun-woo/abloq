@@ -3,11 +3,15 @@ package service
 // Soft delete only: citation_samples references the query by FK, so a hard
 // DELETE would destroy the recorded time series. active=false drops the
 // query from future sampling rounds while the history stays queryable.
+// The id lookup is site-scoped — another site's query id is a plain 404.
 
 // @auth "DeleteCitationQuery" "citation_query" {ResourceID: request.id} "Forbidden" 403
-// @get CitationQuery q = CitationQuery.FindByID({ID: request.id})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get CitationQuery q = CitationQuery.FindByID({SiteID: site.ID, ID: request.id})
 // @empty q "Citation query not found"
-// @put CitationQuery.SoftDelete({ID: request.id})
-// @get CitationQuery updated = CitationQuery.FindByID({ID: request.id})
+// @put CitationQuery.SoftDelete({SiteID: site.ID, ID: request.id})
+// @get CitationQuery updated = CitationQuery.FindByID({SiteID: site.ID, ID: request.id})
+// @empty updated "Citation query not found"
 // @response { id: updated.ID, active: updated.Active }
 func DeleteCitationQuery() {}

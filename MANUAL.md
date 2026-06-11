@@ -345,27 +345,36 @@ API를 직접 치지 않는다.** payload는 Seed 시점 고정 — 작업트리
 스케줄·상태(시계열·큐·영수증)가 필요하면 abloqd를 셀프호스트한다. 백엔드를 켜지
 않아도 모든 검출은 위 CLI로 돈다 — 백엔드는 스케줄과 상태를 더한 것뿐이다.
 
+**멀티사이트**: abloqd 한 인스턴스가 여러 블로그를 운용한다. 사이트 목록은
+`sites.yaml` 선언 SSOT(`SITES_YAML_PATH` env, 예시 `deploy/backend/sites.yaml.example`)
+— 기동 시 DB에 upsert되고 SSOT에서 빠진 사이트는 비활성화된다(이력 보존).
+`SITES_YAML_PATH` 없이 `BLOG_REPO_PATH`만 있으면 `default` 사이트 1개로 합성된다
+(단일 사이트 하위호환 — 단 API 경로는 `/sites/default/…`).
+
 ```bash
 yongol generate backend/specs backend/arts                    # SSOT → Go+Gin 코드
 docker compose -f deploy/backend/docker-compose.yaml up -d --build
 ```
 
-필수 env 3종: `POSTGRES_PASSWORD`·`JWT_SECRET`·`BLOG_REPO_PATH`
-(템플릿 `deploy/backend/.env.example`). 자격증명은 env로만 주입한다.
+필수 env: `POSTGRES_PASSWORD`·`JWT_SECRET` + `SITES_YAML_PATH`(또는 단일 사이트
+`BLOG_REPO_PATH`) (템플릿 `deploy/backend/.env.example`). 자격증명은 env로만 주입한다.
 
-주요 endpoint (전체·바디는 `backend/specs/api/openapi.yaml`):
+주요 endpoint — 도메인 op는 전부 사이트 스코프 `/sites/{site}/…`다. `{site}`는
+sites.yaml의 name(슬러그), 미등록·비활성 사이트는 404 (전체·바디는
+`backend/specs/api/openapi.yaml`):
 
 | endpoint | 역할 |
 |---|---|
 | `GET /health` | 인증 없는 헬스체크 (1분 주기 외부 모니터) |
 | `POST /auth/login` | operator 자격증명 → access token (TTL 15분) |
-| `POST /scans/{freshness,evidence,cluster}` | 스캐너 → 큐 적재 |
-| `POST /queue/export` | 큐 회전 (consumed 동기화 + 신규 발급 + push, 멱등) |
-| `POST /ingest/{crawl,gsc}` | 크롤·색인 계층 수집 |
-| `POST /sample/citations` | 인용 샘플링 |
-| `POST /reports/monthly` | 월간 리포트 |
-| `POST /archive/process` · `POST /receipts/retry` | 아카이버 영수증 처리·재무장 |
-| `POST /hooks/deployed` | 배포 직후 훅 (CI에서 호출) |
+| `GET /sites` | 등록 사이트 목록 (`?active_filter=true` — cron 순회용) |
+| `POST /sites/{site}/scans/{freshness,evidence,cluster}` | 스캐너 → 큐 적재 |
+| `POST /sites/{site}/queue/export` | 큐 회전 (consumed 동기화 + 신규 발급 + push, 멱등) |
+| `POST /sites/{site}/ingest/{crawl,gsc}` | 크롤·색인 계층 수집 |
+| `POST /sites/{site}/sample/citations` | 인용 샘플링 |
+| `POST /sites/{site}/reports/monthly` | 월간 리포트 |
+| `POST /sites/{site}/archive/process` · `…/receipts/retry` | 아카이버 영수증 처리·재무장 |
+| `POST /sites/{site}/hooks/deployed` | 배포 직후 훅 (CI에서 호출) |
 
 cron 프로필 9종(주기·호출 순서)·장애 대응(영수증 retry→process 순서, 큐 적체
 동기화)은 `docs/operations.md` 참조. 전 호출은 멱등이며 실패 주기는 다음 주기가
@@ -457,15 +466,7 @@ tone: ...             # 힌트, 게이트 비대상
 
 ---
 
-## 9. 예정 변경 (v0.2.0 — 미구현, 참고만)
-
-아래는 계획 확정·구현 전 단계다. **현 시점 코드에는 없다** — 이 절 외의 본 매뉴얼은 전부 현행 코드와 1:1이다. 구현이 끝나면 이 절은 해당 본문으로 흡수된다.
-
-- abloqd 멀티사이트: 사이트 목록 `sites.yaml` SSOT, 도메인 endpoint가 `/sites/{site}/…`로 이동(**경로 호환 깨짐**), 사이트 단위 env 8종이 sites.yaml로 이관.
-
----
-
-## 10. 한눈에
+## 9. 한눈에
 
 ```
 사람: blog.yaml + insight.yaml 작성 (인사이트 결정)

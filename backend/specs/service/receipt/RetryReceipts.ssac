@@ -1,10 +1,13 @@
 package service
 
-// Rearm failed/deferred receipts back to pending — the next
-// POST /archive/process executes them. Empty-string filters mean "all".
+// Rearm the site's failed/deferred receipts back to pending — the next
+// POST /sites/{site}/archive/process executes them. Empty-string filters
+// mean "all".
 
 // @auth "RetryReceipts" "receipt" {} "Forbidden" 403
-// @put Receipt.RearmFromFilter({DeployID: request.deploy_id, Kind: request.kind_filter})
-// @get int64 pending = Receipt.CountPending()
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @put Receipt.RearmFromFilter({SiteID: site.ID, DeployID: request.deploy_id, Kind: request.kind_filter})
+// @get int64 pending = Receipt.CountPending({SiteID: site.ID})
 // @response { pending: pending }
 func RetryReceipts() {}

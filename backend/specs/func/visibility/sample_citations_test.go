@@ -44,10 +44,10 @@ func TestSampleCitations(t *testing.T) {
 	t.Setenv("ANTHROPIC_BASE_URL", srv.URL)
 	t.Setenv("OPENAI_API_KEY", "")
 	t.Setenv("CITATION_INTERVAL_MS", "0")
-	t.Setenv("BLOG_REPO_PATH", writeCitationRepo(t, "1"))
+	repo := writeCitationRepo(t, "1")
 
 	queries := `[{"id":1,"query_text":"q-one"},{"id":2,"query_text":"q-two"}]`
-	res, err := SampleCitations(SampleCitationsRequest{QueriesJSON: queries})
+	res, err := SampleCitations(SampleCitationsRequest{RepoPath: repo, QueriesJSON: queries})
 	if err != nil {
 		t.Fatalf("SampleCitations: %v", err)
 	}
@@ -70,8 +70,7 @@ func TestSampleCitations(t *testing.T) {
 	}
 
 	// budget 0 — sampling disabled, '[]' payload.
-	t.Setenv("BLOG_REPO_PATH", writeCitationRepo(t, "0"))
-	res, err = SampleCitations(SampleCitationsRequest{QueriesJSON: queries})
+	res, err = SampleCitations(SampleCitationsRequest{RepoPath: writeCitationRepo(t, "0"), QueriesJSON: queries})
 	if err != nil {
 		t.Fatalf("budget 0: %v", err)
 	}
@@ -79,7 +78,7 @@ func TestSampleCitations(t *testing.T) {
 		t.Errorf("budget-0 run = %+v", res)
 	}
 
-	if _, err := SampleCitations(SampleCitationsRequest{QueriesJSON: "not-json"}); err == nil {
+	if _, err := SampleCitations(SampleCitationsRequest{RepoPath: repo, QueriesJSON: "not-json"}); err == nil {
 		t.Error("malformed queries JSON accepted")
 	}
 	badRepo := t.TempDir()
@@ -87,16 +86,13 @@ func TestSampleCitations(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(badRepo, "blog.yaml"), []byte(badBlog), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", badRepo)
-	if _, err := SampleCitations(SampleCitationsRequest{QueriesJSON: "[]"}); err == nil {
+	if _, err := SampleCitations(SampleCitationsRequest{RepoPath: badRepo, QueriesJSON: "[]"}); err == nil {
 		t.Error("invalid blog.yaml accepted")
 	}
-	t.Setenv("BLOG_REPO_PATH", filepath.Join(badRepo, "missing"))
-	if _, err := SampleCitations(SampleCitationsRequest{QueriesJSON: "[]"}); err == nil {
+	if _, err := SampleCitations(SampleCitationsRequest{RepoPath: filepath.Join(badRepo, "missing"), QueriesJSON: "[]"}); err == nil {
 		t.Error("missing blog.yaml accepted")
 	}
-	t.Setenv("BLOG_REPO_PATH", "")
 	if _, err := SampleCitations(SampleCitationsRequest{QueriesJSON: "[]"}); err == nil {
-		t.Error("missing BLOG_REPO_PATH accepted")
+		t.Error("missing repo_path accepted")
 	}
 }

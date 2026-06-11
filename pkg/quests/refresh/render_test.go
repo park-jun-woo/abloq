@@ -24,9 +24,9 @@ func TestRender(t *testing.T) {
 		"content/en/posts/a.md",
 		"lastmod 2026-06-02 exceeded the 90-day freshness window",
 		"abloq quest refresh submit --key en/posts/a",
-		"순서 박제",       // _queue-protocol.md
-		"낡음 진단",       // tasks.md
-		"갱신의 본질",      // context.md
+		"순서 박제",  // _queue-protocol.md
+		"낡음 진단",  // tasks.md
+		"갱신의 본질", // context.md
 	} {
 		if !strings.Contains(out, want) {
 			t.Errorf("prompt missing %q", want)

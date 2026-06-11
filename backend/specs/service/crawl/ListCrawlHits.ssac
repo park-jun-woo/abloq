@@ -5,6 +5,8 @@ package service
 
 // @no-pagination
 // @auth "ListCrawlHits" "crawl_hit" {} "Forbidden" 403
-// @get []CrawlHit hits = CrawlHit.ListFiltered({Lang: request.lang, Section: request.section, Slug: request.slug, FromDate: request.from_date, ToDate: request.to_date})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []CrawlHit hits = CrawlHit.ListFiltered({SiteID: site.ID, Lang: request.lang, Section: request.section, Slug: request.slug, FromDate: request.from_date, ToDate: request.to_date})
 // @response { hits: hits }
 func ListCrawlHits() {}

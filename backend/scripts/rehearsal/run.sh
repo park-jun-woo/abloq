@@ -31,6 +31,10 @@
 # "No human in the loop": every verdict here is computed (gate rules, HTTP
 # asserts, git asserts). The article edit itself is a scripted agent action.
 #
+# Phase020: the rehearsal keeps the BLOG_REPO_PATH-only boot — abloqd
+# synthesizes the single `default` site at startup (backward compat) and
+# every domain call rides under /sites/default/… (v0.2.0 path move).
+#
 # Usage: backend/scripts/rehearsal/run.sh [record-dir]
 #   record-dir  default docs/rehearsal/2026-06-loop1
 # Requires: backend/arts generated, /tmp/abloq-goproxy (local-goproxy.sh),
@@ -250,19 +254,19 @@ api() { # $1=method $2=path [$3=json-body] — logs the response, prints it
 # ─────────────────────────────────────────────────────────────────────────
 step "3. sync + fixture ingest (CF logs, GSC) + freshness scan + export"
 
-SYNCED=$(api POST /sync | jsonget '["synced"]')
+SYNCED=$(api POST /sites/default/sync | jsonget '["synced"]')
 [ "$SYNCED" = "2" ] || fail "sync: synced=$SYNCED, want 2"
 
-api POST /ingest/crawl >/dev/null
-HITS=$(api GET /crawl-hits | jsonget '["hits"].__len__()')
+api POST /sites/default/ingest/crawl >/dev/null
+HITS=$(api GET /sites/default/crawl-hits | jsonget '["hits"].__len__()')
 [ "$HITS" -ge 1 ] || fail "ingest/crawl: no crawl_hits rows landed"
 
-api POST /ingest/gsc '{"inspect":false}' >/dev/null
+api POST /sites/default/ingest/gsc '{"inspect":false}' >/dev/null
 
-DETECTED=$(api POST /scans/freshness '{"ym":""}' | jsonget '["detected"]')
+DETECTED=$(api POST /sites/default/scans/freshness '{"ym":""}' | jsonget '["detected"]')
 [ "$DETECTED" = "1" ] || fail "scans/freshness: detected=$DETECTED, want 1 (post-a only)"
 
-EXPORT1=$(api POST /queue/export)
+EXPORT1=$(api POST /sites/default/queue/export)
 [ "$(echo "$EXPORT1" | jsonget '["exported"]')" = "1" ] || fail "export: $EXPORT1, want exported=1"
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -335,9 +339,9 @@ git -C "$AGENT" -c user.name=agent -c user.email=agent@rehearsal.test \
 git -C "$AGENT" push -q origin main
 
 git -C "$WORK/deploy" pull -q origin main
-SYNCED=$(api POST /sync | jsonget '["synced"]')
+SYNCED=$(api POST /sites/default/sync | jsonget '["synced"]')
 [ "$SYNCED" = "2" ] || fail "re-sync: synced=$SYNCED, want 2"
-LASTMOD=$(api GET /posts | python3 -c 'import json,sys
+LASTMOD=$(api GET /sites/default/posts | python3 -c 'import json,sys
 posts = json.load(sys.stdin)["posts"]
 print(next(p["lastmod"] for p in posts if p["slug"] == "post-a"))')
 [ "$LASTMOD" = "$TODAY" ] || fail "re-sync: post-a lastmod=$LASTMOD, want $TODAY"
@@ -345,16 +349,16 @@ print(next(p["lastmod"] for p in posts if p["slug"] == "post-a"))')
 # ─────────────────────────────────────────────────────────────────────────
 step "6. /hooks/deployed → /archive/process → receipts done (stub)"
 
-PLANNED=$(api POST /hooks/deployed \
+PLANNED=$(api POST /sites/default/hooks/deployed \
   '{"deploy_id":"rehearsal-loop1","changed":["https://fixture.example.com/tech/post-a/"]}' \
   | jsonget '["planned"]')
 [ "$PLANNED" = "3" ] || fail "hooks/deployed: planned=$PLANNED, want 3"
 
-PROCESS=$(api POST /archive/process '{"limit":100}')
+PROCESS=$(api POST /sites/default/archive/process '{"limit":100}')
 [ "$(echo "$PROCESS" | jsonget '["failed"]')" = "0" ] || fail "archive/process failed: $PROCESS"
 [ "$(echo "$PROCESS" | jsonget '["deferred"]')" = "0" ] || fail "archive/process deferred: $PROCESS"
 
-RECEIPTS=$(api GET '/receipts?deploy_id=rehearsal-loop1&status=done')
+RECEIPTS=$(api GET '/sites/default/receipts?deploy_id=rehearsal-loop1&status=done')
 [ "$(echo "$RECEIPTS" | jsonget '["receipts"].__len__()')" = "3" ] \
   || fail "receipts: want 3 done rows, got $RECEIPTS"
 echo "$RECEIPTS" | python3 -m json.tool > "$RECORD/receipts-done.json"   # evidence ②
@@ -368,9 +372,9 @@ git -C "$AGENT" -c user.name=agent -c user.email=agent@rehearsal.test \
 git -C "$AGENT" push -q origin main
 git -C "$AGENT" log --oneline --reverse > "$RECORD/agent-commits.txt"
 
-EXPORT2=$(api POST /queue/export)
+EXPORT2=$(api POST /sites/default/queue/export)
 [ "$(echo "$EXPORT2" | jsonget '["consumed"]')" = "1" ] || fail "consumed sync: $EXPORT2, want consumed=1"
-CONSUMED_ROWS=$(api GET '/queue?status=consumed')
+CONSUMED_ROWS=$(api GET '/sites/default/queue?status=consumed')
 [ "$(echo "$CONSUMED_ROWS" | jsonget '["items"].__len__()')" = "1" ] \
   || fail "queue: want 1 consumed row, got $CONSUMED_ROWS"
 { echo "POST /queue/export (cycle 2):"; echo "$EXPORT2" | python3 -m json.tool
@@ -380,7 +384,7 @@ CONSUMED_ROWS=$(api GET '/queue?status=consumed')
 # ─────────────────────────────────────────────────────────────────────────
 step "8. monthly report — generate + publish to the bare origin"
 
-REPORT=$(api POST /reports/monthly "{\"ym\":\"$YM\"}")
+REPORT=$(api POST /sites/default/reports/monthly "{\"ym\":\"$YM\"}")
 [ "$(echo "$REPORT" | jsonget '["published"]')" = "True" ] || fail "report not published: $REPORT"
 [ "$(echo "$REPORT" | jsonget '["articles"]')" = "2" ] || fail "report articles != 2: $REPORT"
 

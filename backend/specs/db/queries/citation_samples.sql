@@ -1,7 +1,10 @@
 -- name: CitationSampleInsertFromJson :exec
 -- Batch insert of one sampling round. Samples are pure time-series records
 -- (no unique key, run_at = DB NOW()): every round appends. budget 0 sends
--- '[]' and inserts nothing — the no-op oracle.
+-- '[]' and inserts nothing — the no-op oracle. citation_samples carries no
+-- site_id by design: the site is determined through the citation_queries FK
+-- (no denormalized duplication), and the ids in the payload come from this
+-- site's AggActiveJson.
 WITH incoming AS (
     SELECT (e->>'citation_queries_id')::BIGINT AS citation_queries_id,
            (e->>'engine')::TEXT                AS engine,
@@ -16,20 +19,22 @@ FROM incoming i;
 
 -- name: CitationSampleListFiltered :many
 -- +no-pagination
--- Citation time series; the slug filter joins through citation_queries via
--- a subquery so the row shape stays the bare model (the response converter
--- is table-shaped). Empty-string slug means "no filter"; run_at then id is
--- the series order.
+-- Citation time series; the site and slug filters join through
+-- citation_queries via a subquery so the row shape stays the bare model
+-- (the response converter is table-shaped). Empty-string slug means "no
+-- filter"; run_at then id is the series order.
 SELECT * FROM citation_samples
-WHERE (@slug::text = ''
-       OR citation_queries_id IN (SELECT id FROM citation_queries WHERE slug = @slug::text))
+WHERE citation_queries_id IN (
+        SELECT id FROM citation_queries
+        WHERE site_id = @site_id
+          AND (@slug::text = '' OR slug = @slug::text))
 ORDER BY run_at, id;
 
 -- name: CitationSampleAggMonthJson :one
 -- Per-article cited/total sample counts over the report window ('' = the
 -- last closed month, UTC; run_at compared as a UTC date). Joined through
--- citation_queries for the article key. Priority input + report table only
--- — never a gate (§6.3).
+-- citation_queries for the article key (and the site scope). Priority input
+-- + report table only — never a gate (§6.3).
 WITH bounds AS (
     SELECT (date_trunc('month', CASE WHEN @ym::text = ''
                 THEN date_trunc('month', now() AT TIME ZONE 'utc') - interval '1 month'
@@ -50,7 +55,8 @@ FROM (
     FROM citation_samples cs
     JOIN citation_queries q ON q.id = cs.citation_queries_id
     CROSS JOIN bounds b
-    WHERE (cs.run_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE q.site_id = @site_id
+      AND (cs.run_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY q.lang, q.section, q.slug
 ) AS s;
 
@@ -76,6 +82,7 @@ FROM (
     FROM citation_samples cs
     JOIN citation_queries q ON q.id = cs.citation_queries_id
     CROSS JOIN bounds b
-    WHERE (cs.run_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE q.site_id = @site_id
+      AND (cs.run_at AT TIME ZONE 'utc')::date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY q.lang, q.section, q.slug
 ) AS s;

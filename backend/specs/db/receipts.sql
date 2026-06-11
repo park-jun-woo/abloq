@@ -3,6 +3,7 @@
 -- executes them, POST /receipts/retry rearms failed/deferred back to pending.
 CREATE TABLE receipts (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     deploy_id TEXT NOT NULL DEFAULT '',
     kind VARCHAR(20) NOT NULL CHECK (kind IN ('wayback', 'indexnow', 'gsc_index')),
     target TEXT NOT NULL,
@@ -14,5 +15,5 @@ CREATE TABLE receipts (
 
 -- Idempotency key: one receipt per (deploy, kind, target). The same URL gets a
 -- fresh receipt on every later deploy that changes it — evidence per change.
-CREATE UNIQUE INDEX idx_receipts_deploy_kind_target ON receipts(deploy_id, kind, target);
-CREATE INDEX idx_receipts_kind_target ON receipts(kind, target);
+CREATE UNIQUE INDEX idx_receipts_site_deploy_kind_target ON receipts(site_id, deploy_id, kind, target);
+CREATE INDEX idx_receipts_site_kind_target ON receipts(site_id, kind, target);

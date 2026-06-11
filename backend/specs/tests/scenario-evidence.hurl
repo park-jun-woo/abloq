@@ -10,6 +10,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -20,14 +22,14 @@ token: jsonpath "$.access_token"
 
 # Scan 1: post-a's claims item is detected and enqueued. post-b's dead link
 # is now at 1 consecutive failure — not rot yet.
-POST {{host}}/scans/evidence
+POST {{host}}/sites/{{site}}/scans/evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 1
 
 # Only the claims item is in the queue: 2 claims → priority 2.
-GET {{host}}/queue?kind=evidence
+GET {{host}}/sites/{{site}}/queue?kind=evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -39,14 +41,14 @@ jsonpath "$.items[0].priority" == 2
 
 # Scan 2: detection repeats but the insert is duplicate-free; the dead link
 # reaches 2 consecutive failures — still not rot.
-POST {{host}}/scans/evidence
+POST {{host}}/sites/{{site}}/scans/evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 1
 
 # ... zero duplicate rows, and post-b is still not queued
-GET {{host}}/queue?kind=evidence
+GET {{host}}/sites/{{site}}/queue?kind=evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -55,13 +57,13 @@ jsonpath "$.items[0].slug" == "post-a"
 
 # Scan 3: the dead link hits 3 consecutive failures — rot confirms and
 # post-b's evidence item joins the queue.
-POST {{host}}/scans/evidence
+POST {{host}}/sites/{{site}}/scans/evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 2
 
-GET {{host}}/queue?kind=evidence
+GET {{host}}/sites/{{site}}/queue?kind=evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -72,13 +74,13 @@ jsonpath "$.items[1].slug" == "post-b"
 jsonpath "$.items[1].priority" == 1
 
 # Scan 4: fully idempotent — both items detected, zero new rows.
-POST {{host}}/scans/evidence
+POST {{host}}/sites/{{site}}/scans/evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.detected" == 2
 
-GET {{host}}/queue?kind=evidence
+GET {{host}}/sites/{{site}}/queue?kind=evidence
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

@@ -1,6 +1,7 @@
 -- @func-managed
 CREATE TABLE citation_queries (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     lang VARCHAR(35) NOT NULL,
     section TEXT NOT NULL,
     slug TEXT NOT NULL,
@@ -9,4 +10,4 @@ CREATE TABLE citation_queries (
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX idx_citation_queries_post ON citation_queries(lang, section, slug);
+CREATE INDEX idx_citation_queries_site_post ON citation_queries(site_id, lang, section, slug);

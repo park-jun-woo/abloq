@@ -3,7 +3,9 @@ package service
 import "github.com/park-jun-woo/abloqd/internal/content"
 
 // @auth "Sync" "post" {} "Forbidden" 403
-// @call IndexRepoResponse idx = content.IndexRepo({})
-// @put Post.SyncFromJson({EntriesJson: idx.EntriesJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @call IndexRepoResponse idx = content.IndexRepo({RepoPath: site.RepoPath})
+// @put Post.SyncFromJson({SiteID: site.ID, EntriesJson: idx.EntriesJSON})
 // @response { synced: idx.Count }
 func Sync() {}

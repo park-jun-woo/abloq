@@ -12,12 +12,13 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
 FROM (
     SELECT lang, section, slug, SUM(hits + md_hits)::BIGINT AS hits
     FROM crawl_hits
+    WHERE site_id = @site_id
     GROUP BY lang, section, slug
 ) AS s;
 
 -- name: CrawlHitUpsertFromJson :exec
 -- Batch upsert of one ingest's aggregated rows. ON CONFLICT adds (never
--- replaces): the unique key (hit_date, bot, lang, section, slug) is
+-- replaces): the unique key (site_id, hit_date, bot, lang, section, slug) is
 -- immutable and a later ingest of the same UTC date accumulates onto it.
 -- Zero duplicate accumulation across re-ingests is the cursor's guarantee
 -- (closed-hour boundaries), not this query's.
@@ -31,10 +32,10 @@ WITH incoming AS (
            (e->>'md_hits')::BIGINT AS md_hits
     FROM jsonb_array_elements(@hits_json::jsonb) AS e
 )
-INSERT INTO crawl_hits (hit_date, bot, lang, section, slug, hits, md_hits)
-SELECT i.hit_date, i.bot, i.lang, i.section, i.slug, i.hits, i.md_hits
+INSERT INTO crawl_hits (site_id, hit_date, bot, lang, section, slug, hits, md_hits)
+SELECT @site_id, i.hit_date, i.bot, i.lang, i.section, i.slug, i.hits, i.md_hits
 FROM incoming i
-ON CONFLICT (hit_date, bot, lang, section, slug) DO UPDATE
+ON CONFLICT (site_id, hit_date, bot, lang, section, slug) DO UPDATE
 SET hits = crawl_hits.hits + EXCLUDED.hits,
     md_hits = crawl_hits.md_hits + EXCLUDED.md_hits;
 
@@ -43,7 +44,8 @@ SET hits = crawl_hits.hits + EXCLUDED.hits,
 -- Report/scanner lookup; empty-string filters mean "no filter". from/to
 -- bound hit_date inclusively (UTC dates).
 SELECT * FROM crawl_hits
-WHERE (@lang::text = '' OR lang = @lang::text)
+WHERE site_id = @site_id
+  AND (@lang::text = '' OR lang = @lang::text)
   AND (@section::text = '' OR section = @section::text)
   AND (@slug::text = '' OR slug = @slug::text)
   AND (@from_date::text = '' OR hit_date >= (@from_date::text)::date)
@@ -74,7 +76,8 @@ FROM (
     SELECT c.bot, c.lang, c.section, c.slug,
            SUM(c.hits)::BIGINT AS hits, SUM(c.md_hits)::BIGINT AS md_hits
     FROM crawl_hits c, bounds b
-    WHERE c.hit_date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE c.site_id = @site_id
+      AND c.hit_date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY c.bot, c.lang, c.section, c.slug
 ) AS s;
 
@@ -101,6 +104,7 @@ FROM (
     SELECT c.bot, c.lang, c.section, c.slug,
            SUM(c.hits)::BIGINT AS hits, SUM(c.md_hits)::BIGINT AS md_hits
     FROM crawl_hits c, bounds b
-    WHERE c.hit_date BETWEEN b.month_end - 29 AND b.month_end
+    WHERE c.site_id = @site_id
+      AND c.hit_date BETWEEN b.month_end - 29 AND b.month_end
     GROUP BY c.bot, c.lang, c.section, c.slug
 ) AS s;

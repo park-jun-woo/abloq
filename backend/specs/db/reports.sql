@@ -5,6 +5,7 @@
 -- byte-identical to what pkg/visibility/report rendered.
 CREATE TABLE reports (
     id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    site_id BIGINT NOT NULL REFERENCES sites(id),
     ym VARCHAR(7) NOT NULL,
     markdown TEXT NOT NULL,
     report_json TEXT NOT NULL,
@@ -12,4 +13,4 @@ CREATE TABLE reports (
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX idx_reports_ym ON reports(ym);
+CREATE UNIQUE INDEX idx_reports_site_ym ON reports(site_id, ym);

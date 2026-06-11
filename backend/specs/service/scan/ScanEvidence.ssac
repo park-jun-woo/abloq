@@ -2,20 +2,23 @@ package service
 
 import "github.com/park-jun-woo/abloqd/internal/scan"
 
-// Evidence scanner — claims and link rot over the published corpus. The func
-// reads the repository files under BLOG_REPO_PATH directly (posts has no
-// bodies): the gate's claim detector finds unsourced numeric claims, and a
-// HEAD/GET probe (pkg-internal concurrency, per-domain rate limit, UA
-// abloqd-linkcheck) checks every citation URL. The previous probe state rides
-// in as a JSON scalar and comes back updated — rot confirms only after 3
-// consecutive failed scans, and the confirmation arithmetic lives entirely in
-// the pkg, so the SSaC stays branch-free. Queue dedup is the Phase009 WHERE
-// NOT EXISTS over (kind, slug, lang, payload->>'section').
+// Evidence scanner — claims and link rot over the site's published corpus.
+// The func reads the repository files under the site row's repo_path
+// directly (posts has no bodies): the gate's claim detector finds unsourced
+// numeric claims, and a HEAD/GET probe (pkg-internal concurrency, per-domain
+// rate limit, UA abloqd-linkcheck) checks every citation URL. The previous
+// probe state rides in as a JSON scalar and comes back updated — rot
+// confirms only after 3 consecutive failed scans, and the confirmation
+// arithmetic lives entirely in the pkg, so the SSaC stays branch-free. Queue
+// dedup is the Phase009 WHERE NOT EXISTS over (site_id, kind, slug, lang,
+// payload->>'section').
 
 // @auth "ScanEvidence" "queue_item" {} "Forbidden" 403
-// @get string checksJson = CitationCheck.AggAllJson()
-// @call EvidenceResponse res = scan.Evidence({ChecksJSON: checksJson})
-// @put CitationCheck.UpsertFromJson({ChecksJson: res.ChecksJSON})
-// @put QueueItem.InsertMissingFromJson({ItemsJson: res.ItemsJSON})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get string checksJson = CitationCheck.AggAllJson({SiteID: site.ID})
+// @call EvidenceResponse res = scan.Evidence({RepoPath: site.RepoPath, ChecksJSON: checksJson})
+// @put CitationCheck.UpsertFromJson({SiteID: site.ID, ChecksJson: res.ChecksJSON})
+// @put QueueItem.InsertMissingFromJson({SiteID: site.ID, ItemsJson: res.ItemsJSON})
 // @response { detected: res.Detected }
 func ScanEvidence() {}

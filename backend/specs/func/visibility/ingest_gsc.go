@@ -18,11 +18,14 @@ import (
 
 // @func ingestGsc
 // @error 500
-// @description Run one incremental GSC collection: exchange the service-account assertion for a webmasters.readonly token (scope is a parameter of pkg/archive — never the archiver's indexing scope), list the closed days after the MAX(snap_date) cursor (today UTC minus GSC_DELAY_MARGIN_DAYS, default 2; first run covers GSC_LOOKBACK_DAYS, default 28) and fetch the per-page Search Analytics rows for each. When the request opts in, additionally inspect the URLs of articles whose repository-parsed lastmod falls within GSC_INSPECT_RECENT_DAYS (default 7), at most GSC_INSPECT_MAX (default 10) of them, and return the verdict summaries without storing them. The site property is GSC_SITE_URL or the blog.yaml baseURL. The abloq CLI shares the same pkg statelessly (`abloq ingest gsc`)
+// @description Run one incremental GSC collection for one site: exchange the site's service-account assertion (gsc_sa_json_path; empty falls back to the global GSC_SA_JSON/GSC_SA_JSON_PATH env) for a webmasters.readonly token (scope is a parameter of pkg/archive — never the archiver's indexing scope), list the closed days after the MAX(snap_date) cursor (today UTC minus GSC_DELAY_MARGIN_DAYS, default 2; first run covers GSC_LOOKBACK_DAYS, default 28) and fetch the per-page Search Analytics rows for each. When the request opts in, additionally inspect the URLs of articles whose repository-parsed lastmod falls within GSC_INSPECT_RECENT_DAYS (default 7), at most GSC_INSPECT_MAX (default 10) of them, and return the verdict summaries without storing them. The site property is the row's gsc_site_url or the site blog.yaml baseURL. The abloq CLI shares the same pkg statelessly (`abloq ingest gsc`)
 
 type IngestGscRequest struct {
-	Cursor  string
-	Inspect bool
+	RepoPath   string
+	SiteURL    string
+	SAJSONPath string
+	Cursor     string
+	Inspect    bool
 }
 
 type IngestGscResponse struct {
@@ -34,15 +37,19 @@ type IngestGscResponse struct {
 }
 
 // IngestGsc is the thin @call wrapper around pkg/visibility/gsc: the cursor
-// rides in as a scalar, the credentials and tuning ride in env only. The
-// row JSON field names mirror the gsc_snapshots columns, so the backend's
-// upsert and the pkg's output feed the same batch.
+// rides in as a scalar and the site identity (repo path, GSC property, SA
+// JSON path) rides in from the site row — a site's collection must never
+// run under another site's credentials (multisite isolation); only the
+// tuning margins stay env. The row JSON field names mirror the
+// gsc_snapshots columns, so the backend's upsert and the pkg's output feed
+// the same batch.
 func IngestGsc(req IngestGscRequest) (IngestGscResponse, error) {
-	site, b, err := siteProperty()
+	site, b, err := siteProperty(req.RepoPath, req.SiteURL)
 	if err != nil {
 		return IngestGscResponse{}, err
 	}
-	token, err := archive.GSCToken(archive.ScopeWebmastersReadonly)
+	token, err := archive.GSCTokenWith(archive.Keys{GSCSAJSONPath: req.SAJSONPath},
+		archive.ScopeWebmastersReadonly)
 	if err != nil {
 		return IngestGscResponse{}, err
 	}
@@ -67,7 +74,7 @@ func IngestGsc(req IngestGscRequest) (IngestGscResponse, error) {
 	if !req.Inspect {
 		return out, nil
 	}
-	inspections, err := inspectRecent(base, token, site, b, now)
+	inspections, err := inspectRecent(base, token, site, req.RepoPath, b, now)
 	if err != nil {
 		return IngestGscResponse{}, err
 	}
@@ -77,23 +84,22 @@ func IngestGsc(req IngestGscRequest) (IngestGscResponse, error) {
 	return out, nil
 }
 
-// siteProperty resolves the Search Console property: GSC_SITE_URL wins,
-// otherwise the blog.yaml baseURL as a URL-prefix property. The loaded Blog
-// rides back for the inspection candidate walk.
-func siteProperty() (string, *blogyaml.Blog, error) {
-	root := os.Getenv("BLOG_REPO_PATH")
-	if root == "" {
-		return "", nil, errors.New("BLOG_REPO_PATH is not set")
+// siteProperty resolves the Search Console property: the site row's
+// gsc_site_url wins, otherwise the site blog.yaml baseURL as a URL-prefix
+// property. The loaded Blog rides back for the inspection candidate walk.
+func siteProperty(repoPath, siteURL string) (string, *blogyaml.Blog, error) {
+	if repoPath == "" {
+		return "", nil, errors.New("site repo_path is not set")
 	}
-	b, diags, err := blogyaml.Load(filepath.Join(root, "blog.yaml"))
+	b, diags, err := blogyaml.Load(filepath.Join(repoPath, "blog.yaml"))
 	if err != nil {
 		return "", nil, err
 	}
 	if len(diags) > 0 {
 		return "", nil, fmt.Errorf("blog.yaml invalid: %s", diags[0].String())
 	}
-	if site := os.Getenv("GSC_SITE_URL"); site != "" {
-		return site, b, nil
+	if siteURL != "" {
+		return siteURL, b, nil
 	}
 	site := b.Site.BaseURL
 	if !strings.HasSuffix(site, "/") {
@@ -105,8 +111,8 @@ func siteProperty() (string, *blogyaml.Blog, error) {
 // inspectRecent runs the opt-in URL Inspection pass: articles whose
 // repository-parsed lastmod is within GSC_INSPECT_RECENT_DAYS, capped at
 // GSC_INSPECT_MAX per round (quota guard).
-func inspectRecent(base, token, site string, b *blogyaml.Blog, now time.Time) ([]gsc.Inspection, error) {
-	entries, err := pcontent.IndexRepo(os.Getenv("BLOG_REPO_PATH"))
+func inspectRecent(base, token, site, repoPath string, b *blogyaml.Blog, now time.Time) ([]gsc.Inspection, error) {
+	entries, err := pcontent.IndexRepo(repoPath)
 	if err != nil {
 		return nil, err
 	}

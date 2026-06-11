@@ -9,7 +9,8 @@ SELECT COALESCE(jsonb_agg(jsonb_build_object(
            'status', status,
            'consecutive_failures', consecutive_failures
        ) ORDER BY id), '[]'::jsonb)::text
-FROM citation_checks;
+FROM citation_checks
+WHERE site_id = @site_id;
 
 -- name: CitationCheckUpsertFromJson :exec
 -- Batch upsert of this scan's probe results. The scanner emits one entry per
@@ -26,10 +27,10 @@ WITH incoming AS (
            (e->>'consecutive_failures')::BIGINT AS consecutive_failures
     FROM jsonb_array_elements(@checks_json::jsonb) AS e
 )
-INSERT INTO citation_checks (url, lang, section, slug, status, consecutive_failures)
-SELECT i.url, i.lang, i.section, i.slug, i.status, i.consecutive_failures
+INSERT INTO citation_checks (site_id, url, lang, section, slug, status, consecutive_failures)
+SELECT @site_id, i.url, i.lang, i.section, i.slug, i.status, i.consecutive_failures
 FROM incoming i
-ON CONFLICT (url, lang, section, slug) DO UPDATE
+ON CONFLICT (site_id, url, lang, section, slug) DO UPDATE
 SET status = EXCLUDED.status,
     consecutive_failures = EXCLUDED.consecutive_failures,
     last_checked_at = NOW(),

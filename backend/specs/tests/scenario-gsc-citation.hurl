@@ -9,6 +9,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -19,7 +21,7 @@ token: jsonpath "$.access_token"
 
 # Ingest 1: empty gsc_snapshots — '' cursor covers GSC_LOOKBACK_DAYS=3
 # closed days, the stub answers 2 pages per day.
-POST {{host}}/ingest/gsc
+POST {{host}}/sites/{{site}}/ingest/gsc
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -34,7 +36,7 @@ jsonpath "$.inspections" == "[]"
 
 # Ingest 2: the MAX(snap_date) cursor sits at the last closed day —
 # idempotent re-run collects nothing (zero duplicate accumulation).
-POST {{host}}/ingest/gsc
+POST {{host}}/sites/{{site}}/ingest/gsc
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -48,7 +50,7 @@ jsonpath "$.rows" == 0
 # Ingest 3: opt-in URL Inspection — both fixture posts are recent under the
 # huge GSC_INSPECT_RECENT_DAYS window; the stub verdict is PASS. Nothing is
 # stored: the summary only rides in the response.
-POST {{host}}/ingest/gsc
+POST {{host}}/sites/{{site}}/ingest/gsc
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -62,7 +64,7 @@ jsonpath "$.inspected" == 2
 jsonpath "$.inspections" contains "PASS"
 
 # Register the standard query set: one per fixture post.
-POST {{host}}/citation-queries
+POST {{host}}/sites/{{site}}/citation-queries
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -76,7 +78,7 @@ HTTP 201
 jsonpath "$.slug" == "post-a"
 jsonpath "$.active" == true
 
-POST {{host}}/citation-queries
+POST {{host}}/sites/{{site}}/citation-queries
 Authorization: Bearer {{token}}
 Content-Type: application/json
 {
@@ -90,13 +92,13 @@ HTTP 201
 qid_b: jsonpath "$.id"
 
 # Both queries are listed; the slug filter narrows to one.
-GET {{host}}/citation-queries
+GET {{host}}/sites/{{site}}/citation-queries
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.queries" count == 2
 
-GET {{host}}/citation-queries?slug=post-a
+GET {{host}}/sites/{{site}}/citation-queries?slug=post-a
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -105,7 +107,7 @@ jsonpath "$.queries[0].query_text" == "best agentic blog framework"
 
 # Sampling round 1: 3 stub engines x 2 active queries (budget 2 covers
 # both). Every stub answer cites the fixture domain — all rows cited.
-POST {{host}}/sample/citations
+POST {{host}}/sites/{{site}}/sample/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -114,7 +116,7 @@ jsonpath "$.sampled" == 6
 
 # The time series: engine-major insertion order (perplexity, openai,
 # anthropic), extractor v1, evidence JSON carries the matched URL.
-GET {{host}}/citations
+GET {{host}}/sites/{{site}}/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -128,7 +130,7 @@ jsonpath "$.samples[4].engine" == "anthropic"
 jsonpath "$.samples[4].cited" == true
 
 # Slug filter: only the post-a query's samples (one per engine).
-GET {{host}}/citations?slug=post-a
+GET {{host}}/sites/{{site}}/citations?slug=post-a
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -136,13 +138,13 @@ jsonpath "$.samples" count == 3
 jsonpath "$.samples[0].cited" == true
 
 # Soft delete post-b's query: active flips, the row (and its samples) stay.
-DELETE {{host}}/citation-queries/{{qid_b}}
+DELETE {{host}}/sites/{{site}}/citation-queries/{{qid_b}}
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.active" == false
 
-GET {{host}}/citation-queries?active_filter=true
+GET {{host}}/sites/{{site}}/citation-queries?active_filter=true
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
@@ -150,26 +152,26 @@ jsonpath "$.queries" count == 1
 jsonpath "$.queries[0].slug" == "post-a"
 
 # ... and the recorded post-b samples survive the soft delete (FK history).
-GET {{host}}/citations?slug=post-b
+GET {{host}}/sites/{{site}}/citations?slug=post-b
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.samples" count == 3
 
 # Deleting a query that does not exist is a 404 (guard path).
-DELETE {{host}}/citation-queries/999999
+DELETE {{host}}/sites/{{site}}/citation-queries/999999
 Authorization: Bearer {{token}}
 HTTP 404
 
 # Sampling round 2: only the surviving active query runs (3 engines x 1).
-POST {{host}}/sample/citations
+POST {{host}}/sites/{{site}}/sample/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.engines" == 3
 jsonpath "$.sampled" == 3
 
-GET {{host}}/citations
+GET {{host}}/sites/{{site}}/citations
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

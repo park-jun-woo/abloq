@@ -4,6 +4,8 @@
 # Login as the operator
 POST {{host}}/auth/login
 Content-Type: application/json
+[Options]
+variable: site="default"
 {
   "email": "operator@abloq.test",
   "password": "abloq-operator-test"
@@ -13,21 +15,21 @@ HTTP 200
 token: jsonpath "$.access_token"
 
 # Sync the fixture blog repository
-POST {{host}}/sync
+POST {{host}}/sites/{{site}}/sync
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.synced" == 2
 
 # Sync is idempotent — a second run upserts the same 2 rows
-POST {{host}}/sync
+POST {{host}}/sites/{{site}}/sync
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]
 jsonpath "$.synced" == 2
 
 # The index exposes the parsed front matter and computed metrics
-GET {{host}}/posts
+GET {{host}}/sites/{{site}}/posts
 Authorization: Bearer {{token}}
 HTTP 200
 [Asserts]

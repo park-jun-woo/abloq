@@ -2,6 +2,8 @@ package service
 
 // @no-pagination
 // @auth "ListPosts" "post" {} "Forbidden" 403
-// @get []Post posts = Post.ListAll({})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []Post posts = Post.ListAll({SiteID: site.ID})
 // @response { posts: posts }
 func ListPosts() {}

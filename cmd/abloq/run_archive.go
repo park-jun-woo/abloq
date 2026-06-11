@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=iteration dimension=1
-//ff:what URL 1건을 3종 kind로 전개해 pkg/archive.ProcessBatch 실행, kind별 status와 응답을 출력 — 하나라도 done이 아니면 에러
+//ff:what URL 1건을 3종 kind로 전개해 env 자격(archive.Keys)으로 pkg/archive.ProcessBatchWith 실행, kind별 status와 응답을 출력 — 하나라도 done이 아니면 에러
 package main
 
 import (
@@ -18,7 +18,7 @@ func runArchive(w io.Writer, target string) error {
 		pending = append(pending, archive.Pending{Kind: kind, Target: target})
 	}
 	failed := 0
-	for _, item := range archive.ProcessBatch(pending, int64(len(pending))) {
+	for _, item := range archive.ProcessBatchWith(archiveKeysFromEnv(), pending, int64(len(pending))) {
 		fmt.Fprintf(w, "%s\t%s\t%s\n", item.Kind, item.Status, item.Response)
 		if item.Status != archive.StatusDone {
 			failed++

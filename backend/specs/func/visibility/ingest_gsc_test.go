@@ -61,15 +61,13 @@ func TestIngestGSC(t *testing.T) {
 	srv := gscStub(t)
 	defer srv.Close()
 	repo := writeGSCRepo(t)
-	t.Setenv("BLOG_REPO_PATH", repo)
 	t.Setenv("GSC_SEARCH_API_BASE", srv.URL)
 	t.Setenv("GSC_TOKEN_URL", srv.URL+"/token")
 	t.Setenv("GSC_SA_JSON", testSAJSON(t))
 	t.Setenv("GSC_SA_JSON_PATH", "")
-	t.Setenv("GSC_SITE_URL", "")
 	t.Setenv("GSC_LOOKBACK_DAYS", "3")
 
-	res, err := IngestGsc(IngestGscRequest{Cursor: "", Inspect: false})
+	res, err := IngestGsc(IngestGscRequest{RepoPath: repo, Cursor: "", Inspect: false})
 	if err != nil {
 		t.Fatalf("IngestGSC: %v", err)
 	}
@@ -94,7 +92,7 @@ func TestIngestGSC(t *testing.T) {
 
 	// Cursor at the last closed day — nothing to collect.
 	cursor := time.Now().UTC().AddDate(0, 0, -2).Format("2006-01-02")
-	res, err = IngestGsc(IngestGscRequest{Cursor: cursor, Inspect: false})
+	res, err = IngestGsc(IngestGscRequest{RepoPath: repo, Cursor: cursor, Inspect: false})
 	if err != nil {
 		t.Fatalf("up-to-date cursor: %v", err)
 	}
@@ -103,7 +101,7 @@ func TestIngestGSC(t *testing.T) {
 	}
 
 	// Opt-in inspection: the today-lastmod article is selected and PASSes.
-	res, err = IngestGsc(IngestGscRequest{Cursor: cursor, Inspect: true})
+	res, err = IngestGsc(IngestGscRequest{RepoPath: repo, Cursor: cursor, Inspect: true})
 	if err != nil {
 		t.Fatalf("inspect run: %v", err)
 	}
@@ -111,27 +109,25 @@ func TestIngestGSC(t *testing.T) {
 		t.Errorf("inspected=%d inspections=%s", res.Inspected, res.InspectionsJSON)
 	}
 
-	// GSC_SITE_URL wins over the baseURL derivation; envOr returns the set
-	// value and the default.
-	t.Setenv("GSC_SITE_URL", "sc-domain:t.example.com")
-	if site, _, err := siteProperty(); err != nil || site != "sc-domain:t.example.com" {
-		t.Errorf("siteProperty with GSC_SITE_URL = %q, %v", site, err)
+	// The site row's gsc_site_url wins over the baseURL derivation; envOr
+	// returns the set value and the default.
+	if site, _, err := siteProperty(repo, "sc-domain:t.example.com"); err != nil || site != "sc-domain:t.example.com" {
+		t.Errorf("siteProperty with a row gsc_site_url = %q, %v", site, err)
 	}
-	t.Setenv("GSC_SITE_URL", "")
-	if got := envOr("GSC_SITE_URL", "fallback"); got != "fallback" {
+	if got := envOr("GSC_SITE_URL_UNSET_PROBE", "fallback"); got != "fallback" {
 		t.Errorf("envOr empty = %q, want fallback", got)
 	}
 
 	// Search Analytics failure aborts the collection.
 	t.Setenv("GSC_SEARCH_API_BASE", "http://127.0.0.1:1")
-	if _, err := IngestGsc(IngestGscRequest{Cursor: "", Inspect: false}); err == nil {
+	if _, err := IngestGsc(IngestGscRequest{RepoPath: repo, Cursor: "", Inspect: false}); err == nil {
 		t.Error("collect failure accepted")
 	}
 	t.Setenv("GSC_SEARCH_API_BASE", srv.URL)
 
 	// Token failure aborts before any collection.
 	t.Setenv("GSC_SA_JSON", `{"client_email":"x@test","private_key":"not-pem"}`)
-	if _, err := IngestGsc(IngestGscRequest{}); err == nil {
+	if _, err := IngestGsc(IngestGscRequest{RepoPath: repo}); err == nil {
 		t.Error("bad SA key accepted")
 	}
 	t.Setenv("GSC_SA_JSON", testSAJSON(t))
@@ -142,18 +138,15 @@ func TestIngestGSC(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(badRepo, "blog.yaml"), []byte(badBlog), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("BLOG_REPO_PATH", badRepo)
-	if _, _, err := siteProperty(); err == nil {
+	if _, _, err := siteProperty(badRepo, ""); err == nil {
 		t.Error("invalid blog.yaml accepted")
 	}
-	t.Setenv("BLOG_REPO_PATH", filepath.Join(badRepo, "missing"))
-	if _, _, err := siteProperty(); err == nil {
+	if _, _, err := siteProperty(filepath.Join(badRepo, "missing"), ""); err == nil {
 		t.Error("missing blog.yaml accepted")
 	}
 
-	t.Setenv("BLOG_REPO_PATH", "")
 	if _, err := IngestGsc(IngestGscRequest{}); err == nil {
-		t.Error("missing BLOG_REPO_PATH accepted")
+		t.Error("missing repo_path accepted")
 	}
 }
 
@@ -161,7 +154,6 @@ func TestIngestGSC(t *testing.T) {
 // repository and a failing inspection endpoint.
 func TestInspectRecent(t *testing.T) {
 	repo := writeGSCRepo(t)
-	t.Setenv("BLOG_REPO_PATH", repo)
 	t.Setenv("GSC_INSPECT_RECENT_DAYS", "36500")
 	b, _, err := blogyaml.Load(filepath.Join(repo, "blog.yaml"))
 	if err != nil {
@@ -169,13 +161,13 @@ func TestInspectRecent(t *testing.T) {
 	}
 	now := time.Now().UTC()
 
-	if _, err := inspectRecent("http://127.0.0.1:1", "tok", "https://t.example.com/", b, now); err == nil {
+	if _, err := inspectRecent("http://127.0.0.1:1", "tok", "https://t.example.com/", repo, b, now); err == nil {
 		t.Error("failing inspection endpoint accepted")
 	}
 
 	srv := gscStub(t)
 	defer srv.Close()
-	ins, err := inspectRecent(srv.URL, "tok", "https://t.example.com/", b, now)
+	ins, err := inspectRecent(srv.URL, "tok", "https://t.example.com/", repo, b, now)
 	if err != nil || len(ins) != 1 || ins[0].Verdict != "PASS" {
 		t.Errorf("inspectRecent = %+v, %v", ins, err)
 	}
@@ -183,13 +175,12 @@ func TestInspectRecent(t *testing.T) {
 	// No recent articles — an empty (non-nil) summary, zero quota burnt.
 	t.Setenv("GSC_INSPECT_RECENT_DAYS", "0")
 	t.Setenv("GSC_INSPECT_MAX", "10")
-	ins, err = inspectRecent(srv.URL, "tok", "https://t.example.com/", b, now.AddDate(0, 0, 30))
+	ins, err = inspectRecent(srv.URL, "tok", "https://t.example.com/", repo, b, now.AddDate(0, 0, 30))
 	if err != nil || ins == nil || len(ins) != 0 {
 		t.Errorf("no candidates = %+v, %v, want empty non-nil", ins, err)
 	}
 
-	t.Setenv("BLOG_REPO_PATH", filepath.Join(repo, "missing"))
-	if _, err := inspectRecent(srv.URL, "tok", "https://t.example.com/", b, now); err == nil {
+	if _, err := inspectRecent(srv.URL, "tok", "https://t.example.com/", filepath.Join(repo, "missing"), b, now); err == nil {
 		t.Error("unreadable repository accepted")
 	}
 }

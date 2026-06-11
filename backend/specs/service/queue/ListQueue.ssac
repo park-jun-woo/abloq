@@ -6,6 +6,8 @@ package service
 
 // @no-pagination
 // @auth "ListQueue" "queue_item" {} "Forbidden" 403
-// @get []QueueItem items = QueueItem.ListFiltered({Kind: request.kind, Status: request.status})
+// @get Site site = Site.FindActiveByName({Name: request.site})
+// @empty site "Site not found"
+// @get []QueueItem items = QueueItem.ListFiltered({SiteID: site.ID, Kind: request.kind, Status: request.status})
 // @response { items: items }
 func ListQueue() {}
