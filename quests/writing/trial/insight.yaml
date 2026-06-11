@@ -1,0 +1,38 @@
+# 시범 운행 인사이트 — Phase016 집필 퀘스트 도그푸드
+# 사람 입력(인사이트 결정)에 해당. claims.text는 저자 언어(한국어), anchors는 글 언어(영어).
+# planted-claim은 의도적으로 본문에서 다루지 않을 주장 — REVIEW disposition 커버리지 검증용.
+topic: "robots.txt와 Robots Exclusion Protocol — 30년 묵은 관행이 표준이 되기까지"
+stance: "robots.txt는 접근 제어 장치가 아니라 신호다 — AI 크롤러 시대의 운용은 그 한계를 알고 설계해야 한다"
+audience: "블로그·문서 사이트를 직접 운영하며 AI 크롤러 정책을 결정해야 하는 개발자"
+section: posts
+tags: ["robots.txt", "GEO", "crawler"]
+claims:
+  - id: rep-standardized-2022
+    text: "robots.txt 관행은 1994년에 시작됐지만 IETF 표준(RFC 9309)이 된 것은 2022년이다"
+    kind: claim
+    requires_source: true
+    anchors: ["RFC 9309", "1994"]
+  - id: rep-not-access-control
+    text: "REP는 접근 제어가 아니다 — 크롤러의 자발적 준수에 기대는 신호일 뿐이며, 강제력은 서버 측 인증·차단에서 나온다"
+    kind: claim
+    requires_source: true
+    anchors: ["not a form of access authorization", "voluntary"]
+  - id: rep-definition
+    text: "REP = 크롤러가 사이트 루트의 robots.txt를 읽어 URI 접근 허용 여부를 스스로 판정하는 규약"
+    kind: definition
+    requires_source: false
+    anchors: ["robots.txt", "crawler"]
+  - id: ai-crawlers-geo
+    text: "AI 크롤러(훈련·검색·실시간 fetch)의 등장으로 robots.txt 운용은 GEO 의사결정의 일부가 됐다"
+    kind: claim
+    requires_source: false
+    anchors: ["AI crawler", "GEO"]
+  - id: planted-claim
+    text: "robots.txt 캐싱 TTL을 늘리면 서버 비용이 유의미하게 준다"
+    kind: claim
+    requires_source: false
+    anchors: ["caching TTL cost saving"]
+non_goals:
+  - "특정 AI 업체별 크롤러 차단 가이드"
+  - "법적 효력(저작권·약관) 논의"
+tone: "단정적, 표준 문서 인용 중심"

@@ -15,6 +15,7 @@ required:
     scan: "콘텐츠 스캐너 — freshness_days 초과 글·무출처 수치 주장·인용 link rot·클러스터 위반(태그·내부링크 그래프) 검출 → 우선순위 큐 후보, CLI와 abloqd 백엔드가 공유 (Phase009·010·011)"
     queueio: "큐 exporter 공통 모듈 — queue_items → quests/queue/*.yaml 결정적 직렬화 + 전용 작업 클론 커밋·푸시, 역방향 consumed 동기화 (Phase009, Phase010·011 재사용)"
     insight: "인사이트 명세 — insight.yaml strict 파싱·검증과 anchors 본문 대조(NFC+케이스 폴딩 부분문자열, REVIEW 보조), 집필 퀘스트 게이트의 기준 (Phase015)"
+    quest: "퀘스트 — reins gate.Definition 소비자(Seed/Render/Prepare/Rules), abloq 게이트 룰 어댑터와 REVIEW 기록 커버리지 룰, abloq quest <name>으로 마운트 (Phase016 집필)"
     visibility: "가시성 우선순위·수집·리포트 — 글별 신호(crawl_hits 합계, date, 30d 측정 4종)를 큐 우선순위 점수로 환산, CF 로그 크롤 수집, GSC 폴링·인용 샘플링, 월간 리포트 (Phase009 콜드스타트, Phase012 크롤 수집, Phase013 GSC·인용, Phase014 측정 합류·리포트)"
   type:
     schema: "도메인 데이터 모델 — blog.yaml 스키마, 진단, 봇 UA, 발행 글, 산출물"
