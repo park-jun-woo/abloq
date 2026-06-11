@@ -10,7 +10,7 @@ import (
 
 func TestFlattenWhite(t *testing.T) {
 	src := image.NewNRGBA(image.Rect(0, 0, 2, 1))
-	src.SetNRGBA(0, 0, color.NRGBA{0, 0, 0, 0})       // transparent
+	src.SetNRGBA(0, 0, color.NRGBA{0, 0, 0, 0})     // transparent
 	src.SetNRGBA(1, 0, color.NRGBA{255, 0, 0, 255}) // opaque red
 	got := FlattenWhite(src)
 	r, g, b, _ := got.At(0, 0).RGBA()

@@ -38,6 +38,11 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `geo.min_sources` | int | | `1` | 근거 게이트 임계 (≥ 0) |
 | `geo.min_internal_links` | int | | `2` | 클러스터 게이트 임계 (≥ 0) |
 | `geo.min_meaningful_diff` | int | | `10` | honest-lastmod 임계 — 공백·구두점 정규화 후 토큰 diff가 이 값 미만이면 lastmod 갱신 거부 (≥ 1) |
+| `image.og.provider` | string | | `local` | OG 이미지 provider — `local`(결정론 텍스트 카드) \| `gemini`(AI 배경, opt-in). API 키는 env 전용(`GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`) — **blog.yaml에 키 금지** |
+| `image.og.model` | string | | `""` | provider 모델 id — 빈 값 = provider 기본 모델 |
+| `image.og.overlay` | bool | | `false` | AI 배경 위에 제목/브랜드를 결정론적으로 합성 |
+| `image.og.prompt` | string | | 내장 템플릿 | 사이트 공통 프롬프트 템플릿 — `{title}`/`{summary}`/`{brand}` 치환. 미선언 시 내장 기본(no text·no words·safe margin 포함) |
+| `image.og.variants` | [object] | | — | 이름 있는 안 프리셋 — `name` 필수(URL-safe·유니크·`default` 예약어 금지), `model`/`overlay`/`prompt`는 미지정 시 상위 상속(명시한 `false`/`""`는 실제 오버라이드) |
 | `deploy.provider` | string | | `s3-cloudfront` | 배포 대상 |
 | `deploy.terraform` | bool | | `false` | IaC 생성 여부 |
 | `deploy.indexnow` | bool | | `true` | 배포 후 IndexNow 핑 |
@@ -59,6 +64,9 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `llmstxt-pinned` | pinned 각 엔트리에 `title`·`url` 존재, `url`은 절대 http(s) URL 또는 `/` 시작 |
 | `llmstxt-labels` | `geo.llms_txt.section_labels` 키가 선언된 섹션 |
 | `llmstxt-max-summary` | `geo.llms_txt.max_summary ≥ 0` |
+| `og-provider` | `image.og.provider`가 `local` \| `gemini` |
+| `og-variant-name` | variant `name`이 URL-safe(소문자/숫자/`-`/`_`)·유니크·예약어 `default` 아님 |
+| `og-local-variants` | **비차단 경고** — provider `local`인데 `variants` 선언(무의미). `abloq validate` text 출력에만 표시, exit code 무관 |
 
 ## llms.txt 생성 모드
 
@@ -103,6 +111,21 @@ geo:
   min_sources: 1
   min_internal_links: 2
   min_meaningful_diff: 10
+
+# image:                           # 선택 — 미선언 시 전부 기존 local 동작
+#   og:
+#     provider: gemini             # local | gemini  (키는 env: GEMINI_API_KEY)
+#     model: ""                    # 빈 값 = provider 기본 모델
+#     overlay: true                # AI 배경 위 제목/브랜드 결정론 합성
+#     prompt: |                    # {title}/{summary}/{brand} 치환
+#       Minimal abstract tech background for "{title}". No text, no words.
+#     variants:                    # 안 프리셋 — 미지정 필드는 상위 상속
+#       - name: minimal
+#         prompt: Flat geometric shapes, brand-color accent.
+#       - name: photo
+#         model: imagen-4
+#         overlay: false
+#         prompt: Photorealistic scene evoking "{summary}".
 
 deploy:
   provider: s3-cloudfront
