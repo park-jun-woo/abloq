@@ -23,8 +23,8 @@ func TestParseFMTime(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if _, ok := parseFMTime(tc.in); ok != tc.wantOK {
-				t.Errorf("parseFMTime(%v) ok = %v, want %v", tc.in, ok, tc.wantOK)
+			if _, ok := ParseFMTime(tc.in); ok != tc.wantOK {
+				t.Errorf("ParseFMTime(%v) ok = %v, want %v", tc.in, ok, tc.wantOK)
 			}
 		})
 	}

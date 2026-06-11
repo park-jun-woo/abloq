@@ -1,22 +1,12 @@
-//ff:func feature=quest type=parser control=iteration dimension=1
-//ff:what 디렉토리에서 위로 blog.yaml을 탐색해 인스턴스 루트(절대 경로) 반환 — 파일시스템 루트까지 없으면 에러
+//ff:func feature=quest type=parser control=sequence
+//ff:what 디렉토리에서 위로 blog.yaml을 탐색해 인스턴스 루트 반환 — 공용 추출본(quests/common.FindRoot) 위임
+//ff:why Phase017에서 번역 퀘스트와 공유하도록 구현을 pkg/quests/common으로 추출 — 복제 금지, writing은 추출본을 쓴다
 package writing
 
-import (
-	"fmt"
-	"os"
-	"path/filepath"
-)
+import "github.com/park-jun-woo/abloq/pkg/quests/common"
 
-// findRoot walks up from dir to the nearest directory containing blog.yaml —
-// the blog instance root every payload path is relative to.
+// findRoot walks up from dir to the nearest directory containing blog.yaml.
+// The implementation lives in pkg/quests/common (Phase017 extraction).
 func findRoot(dir string) (string, error) {
-	for d := dir; ; d = filepath.Dir(d) {
-		if _, err := os.Stat(filepath.Join(d, "blog.yaml")); err == nil {
-			return d, nil
-		}
-		if d == filepath.Dir(d) {
-			return "", fmt.Errorf("blog.yaml not found in any ancestor of %s", dir)
-		}
-	}
+	return common.FindRoot(dir)
 }

@@ -1,28 +1,17 @@
 //ff:func feature=quest type=rule control=sequence
-//ff:what abloq 게이트 룰 1개를 reins 룰로 감싸는 어댑터 — gate.Run(단일 룰)을 호출해 발동 진단을 Fact 1건으로 매핑, LevelFail 고정
+//ff:what abloq 게이트 룰 1개를 reins 룰로 감싸는 어댑터 — 공용 추출본(quests/common.AdaptRule) 위임
+//ff:why Phase017에서 번역 퀘스트와 공유하도록 구현을 pkg/quests/common으로 추출 — 복제 금지, writing은 추출본을 쓴다
 package writing
 
 import (
 	rgate "github.com/park-jun-woo/reins/pkg/gate"
-	"github.com/park-jun-woo/reins/pkg/quest"
 
-	agate "github.com/park-jun-woo/abloq/pkg/gate"
+	"github.com/park-jun-woo/abloq/pkg/quests/common"
 )
 
 // adaptRule wraps one abloq gate rule (by catalog ID) as a reins LevelFail
-// rule: Check runs exactly that rule over the submission's target and maps
-// its diagnostics to a single located Fact (existing rule code unchanged).
+// rule. The implementation lives in pkg/quests/common (Phase017 extraction);
+// Submission satisfies common.TargetCarrier.
 func adaptRule(id string) rgate.Rule {
-	desc := ruleDesc(id)
-	return rgate.Rule{
-		Meta: rgate.RuleMeta{ID: id, Level: rgate.LevelFail, Desc: desc},
-		Check: func(ctx rgate.Context) (bool, quest.Fact) {
-			sub := ctx.Submission.(*Submission)
-			diags := agate.Run(sub.Target, id)
-			if len(diags) == 0 {
-				return false, quest.Fact{}
-			}
-			return true, diagsFact(desc, diags)
-		},
-	}
+	return common.AdaptRule(id)
 }

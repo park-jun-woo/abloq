@@ -14,7 +14,7 @@ func fmSchemaDiags(a *Article) []blogyaml.Diagnostic {
 	if !a.Doc.HasFM {
 		return []blogyaml.Diagnostic{diag(1, "front matter block missing or malformed")}
 	}
-	m, ok := fmMap(a.Doc.FrontMatter)
+	m, ok := FMMap(a.Doc.FrontMatter)
 	if !ok {
 		return []blogyaml.Diagnostic{diag(1, "front matter is not valid YAML")}
 	}
@@ -22,11 +22,11 @@ func fmSchemaDiags(a *Article) []blogyaml.Diagnostic {
 	if s, _ := m["title"].(string); s == "" {
 		diags = append(diags, diag(fmKeyLine(a.Doc.FrontMatter, "title"), "title must be a non-empty string"))
 	}
-	date, dateOK := parseFMTime(m["date"])
+	date, dateOK := ParseFMTime(m["date"])
 	if !dateOK {
 		diags = append(diags, diag(fmKeyLine(a.Doc.FrontMatter, "date"), "date must be a RFC3339 or YYYY-MM-DD value"))
 	}
-	lastmod, lastmodOK := parseFMTime(m["lastmod"])
+	lastmod, lastmodOK := ParseFMTime(m["lastmod"])
 	if !lastmodOK {
 		diags = append(diags, diag(fmKeyLine(a.Doc.FrontMatter, "lastmod"), "lastmod must be a RFC3339 or YYYY-MM-DD value"))
 	}

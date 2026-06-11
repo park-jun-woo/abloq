@@ -8,7 +8,7 @@ import "strings"
 // a non-empty list of non-empty reason strings; exempt is true only then.
 // bad is true when the key exists but states no usable reason.
 func claimsIgnore(a *Article) (exempt, bad bool) {
-	m, ok := fmMap(a.Doc.FrontMatter)
+	m, ok := FMMap(a.Doc.FrontMatter)
 	if !ok {
 		return false, false
 	}

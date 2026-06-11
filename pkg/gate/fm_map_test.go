@@ -5,7 +5,7 @@ package gate
 import "testing"
 
 func TestFMMap(t *testing.T) {
-	m, ok := fmMap("title: \"X\"\ntags: [a, b]\n")
+	m, ok := FMMap("title: \"X\"\ntags: [a, b]\n")
 	if !ok {
 		t.Fatal("want ok for valid front matter")
 	}
@@ -15,7 +15,7 @@ func TestFMMap(t *testing.T) {
 	if tags, _ := m["tags"].([]any); len(tags) != 2 {
 		t.Errorf("tags = %v, want 2 entries", m["tags"])
 	}
-	if _, ok := fmMap("title: [unclosed"); ok {
+	if _, ok := FMMap("title: [unclosed"); ok {
 		t.Error("want !ok for broken YAML")
 	}
 }

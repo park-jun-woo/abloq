@@ -1,27 +1,17 @@
 //ff:func feature=quest type=rule control=sequence
-//ff:what abloq 진단 목록 → reins Fact 1건 — 첫 진단의 파일:라인/메시지, 다중 진단은 "(외 N건)" 병기 (룰당 Fact 1건 규약)
+//ff:what abloq 진단 목록 → reins Fact 1건 — 공용 추출본(quests/common.DiagsFact) 위임
+//ff:why Phase017에서 번역 퀘스트와 공유하도록 구현을 pkg/quests/common으로 추출 — 복제 금지, writing은 추출본을 쓴다
 package writing
 
 import (
-	"fmt"
-
 	"github.com/park-jun-woo/reins/pkg/quest"
 
 	"github.com/park-jun-woo/abloq/pkg/blogyaml"
+	"github.com/park-jun-woo/abloq/pkg/quests/common"
 )
 
 // diagsFact maps one fired rule's diagnostics to the single Fact the adapter
-// emits: the first diagnostic located and quantified, with the remaining
-// count noted. The Rule field is stamped by reins gate.Evaluate.
+// emits. The implementation lives in pkg/quests/common (Phase017 extraction).
 func diagsFact(expected string, diags []blogyaml.Diagnostic) quest.Fact {
-	d := diags[0]
-	actual := d.Message
-	if len(diags) > 1 {
-		actual += fmt.Sprintf(" (외 %d건)", len(diags)-1)
-	}
-	return quest.Fact{
-		Where:    fmt.Sprintf("%s:%d", d.File, d.Line),
-		Expected: expected,
-		Actual:   actual,
-	}
+	return common.DiagsFact(expected, diags)
 }

@@ -14,7 +14,7 @@ func special(a *Article) bool {
 	if !a.Doc.HasFM {
 		return false
 	}
-	m, ok := fmMap(a.Doc.FrontMatter)
+	m, ok := FMMap(a.Doc.FrontMatter)
 	if !ok {
 		return false
 	}

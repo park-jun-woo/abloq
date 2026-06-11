@@ -1,0 +1,23 @@
+# blog.yaml — 이 블로그의 SSOT (abloq init 생성)
+# 모든 파생물과 게이트 파라미터가 여기서 나온다. 스키마: docs/blog-yaml.md
+site:
+  baseURL: https://trial017.example.com
+  title: "Trial 017"
+  author: "Park Junwoo"
+
+languages: [en, ko, ja, ar]
+sections: [posts]
+
+structure:
+  order: [body, sources]
+  headings:
+    sources: { en: "Sources", ko: "출처", ja: "出典", ar: "المصادر" }
+
+geo:
+  crawlers:
+    training: allow
+    search: allow
+    fetch: allow
+
+deploy:
+  provider: s3-cloudfront

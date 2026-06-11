@@ -1,11 +1,12 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what "abloq quest" 부모 명령 생성 — reins NewQuestCmd("writing")를 마운트 (scan/next/submit/status/export/rules)
+//ff:what "abloq quest" 부모 명령 생성 — reins NewQuestCmd("writing"/"translation")를 마운트 (scan/next/submit/status/export/rules)
 package main
 
 import (
 	rcli "github.com/park-jun-woo/reins/pkg/cli"
 	"github.com/spf13/cobra"
 
+	"github.com/park-jun-woo/abloq/pkg/quests/translation"
 	"github.com/park-jun-woo/abloq/pkg/quests/writing"
 )
 
@@ -14,8 +15,9 @@ import (
 func newQuestCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "quest",
-		Short: "Agent quests (reins-gated): writing",
+		Short: "Agent quests (reins-gated): writing, translation",
 	}
 	cmd.AddCommand(rcli.NewQuestCmd("writing", writing.Definition{}, rcli.Options{}))
+	cmd.AddCommand(rcli.NewQuestCmd("translation", translation.Definition{}, rcli.Options{}))
 	return cmd
 }

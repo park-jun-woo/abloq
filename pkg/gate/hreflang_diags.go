@@ -13,7 +13,7 @@ import (
 // against the languages the article exists in. The page path follows
 // Blog.URLLang — a root-served default language has no language directory.
 func hreflangDiags(dir string, b *blogyaml.Blog, a *Article, langs []string) []blogyaml.Diagnostic {
-	page := filepath.Join("public", b.URLLang(a.Lang), a.Section, effSlug(a), "index.html")
+	page := filepath.Join("public", b.URLLang(a.Lang), a.Section, EffSlug(a), "index.html")
 	html, err := os.ReadFile(filepath.Join(dir, page))
 	if err != nil {
 		return []blogyaml.Diagnostic{{File: a.Path, Line: 1, Rule: "hreflang-complete",

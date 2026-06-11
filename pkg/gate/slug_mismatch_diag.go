@@ -7,9 +7,9 @@ import "github.com/park-jun-woo/abloq/pkg/blogyaml"
 // slugMismatchDiag reports the first language version whose effective slug
 // differs from the group's first one.
 func slugMismatchDiag(group []*Article) *blogyaml.Diagnostic {
-	want := effSlug(group[0])
+	want := EffSlug(group[0])
 	for _, a := range group[1:] {
-		got := effSlug(a)
+		got := EffSlug(a)
 		if got == want {
 			continue
 		}
