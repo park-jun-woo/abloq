@@ -8,6 +8,7 @@ import "github.com/spf13/cobra"
 func newRootCmd() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:           "abloq",
+		Version:       "0.1.0",
 		Short:         "abloq — Agentic blog Quest framework CLI",
 		Long:          "abloq drives an agent-operable blog from a single blog.yaml SSOT.",
 		SilenceUsage:  true,
