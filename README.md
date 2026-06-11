@@ -1,6 +1,7 @@
 # abloq
 
-**v0.1.0** · MIT
+[![version](https://img.shields.io/badge/version-v0.1.0-blue)](https://github.com/park-jun-woo/abloq/releases)
+[![license: MIT](https://img.shields.io/badge/license-MIT-green)](./LICENSE)
 
 **Agentic blog Quest** — 에이전트가 운용하는 블로그.
 
