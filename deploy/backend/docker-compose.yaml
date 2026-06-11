@@ -214,9 +214,15 @@ services:
         while true; do
           sleep "$$GSC_PERIOD_SECONDS"
           # ① login — 매 주기 토큰 발급 (access token TTL 15분)
-          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login             -H 'Content-Type: application/json'             -d "{"email":"$$ABLOQD_OPERATOR_EMAIL","password":"$$ABLOQD_OPERATOR_PASSWORD"}"             | jq -r .access_token) || { echo "gsc: login failed"; continue; }
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "gsc: login failed"; continue; }
           # ② ingest — 닫힌 일자 증분 수집 (멱등, inspect 항상 off)
-          curl -sf -m 600 -X POST http://abloqd:8080/ingest/gsc             -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json'             -d '{"inspect":false}' >/dev/null             || echo "gsc: ingest failed (next cycle retries)"
+          curl -sf -m 600 -X POST http://abloqd:8080/ingest/gsc \
+            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+            -d '{"inspect":false}' >/dev/null \
+            || echo "gsc: ingest failed (next cycle retries)"
         done
     restart: unless-stopped
 
@@ -241,9 +247,14 @@ services:
         while true; do
           sleep "$$CITATION_PERIOD_SECONDS"
           # ① login — 매 주기 토큰 발급
-          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login             -H 'Content-Type: application/json'             -d "{"email":"$$ABLOQD_OPERATOR_EMAIL","password":"$$ABLOQD_OPERATOR_PASSWORD"}"             | jq -r .access_token) || { echo "citation: login failed"; continue; }
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "citation: login failed"; continue; }
           # ② sample — budget 상한 1회전 (budget 0이면 no-op)
-          curl -sf -m 600 -X POST http://abloqd:8080/sample/citations             -H "Authorization: Bearer $$TOKEN" >/dev/null             || echo "citation: sample failed (next cycle retries)"
+          curl -sf -m 600 -X POST http://abloqd:8080/sample/citations \
+            -H "Authorization: Bearer $$TOKEN" >/dev/null \
+            || echo "citation: sample failed (next cycle retries)"
         done
     restart: unless-stopped
 
@@ -280,6 +291,141 @@ services:
             -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
             -d '{"ym":""}' >/dev/null \
             || echo "report: generate failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 신선도 스캔 cron (Phase019, 권고 월간) — posts lastmod × geo.freshness_days
+  # 초과분을 kind=refresh로 적재한다. 멱등 — 중복 없는 insert(open/exported
+  # 큐에 이미 있으면 재적재 없음). body ym=''는 직전 닫힌 월(UTC) — 탐지에는
+  # 무관, 우선순위 신호 윈도만 정한다. 스캔 직후 발급은 queue-export 서비스가
+  # 다음 주기에 수행한다(전용 트리거 없음 — 멱등 재호출 한 종으로 통일).
+  # 켜기: docker compose --profile freshness up -d
+  freshness-scan:
+    image: alpine:3.21
+    profiles: ["freshness"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the freshness scan cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the freshness scan cron}
+      FRESHNESS_PERIOD_SECONDS: ${FRESHNESS_PERIOD_SECONDS:-2592000}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$FRESHNESS_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "freshness: login failed"; continue; }
+          # ② scan — 신선도 초과 글 적재 (멱등, ym=''=직전 닫힌 월)
+          curl -sf -m 600 -X POST http://abloqd:8080/scans/freshness \
+            -H "Authorization: Bearer $$TOKEN" -H 'Content-Type: application/json' \
+            -d '{"ym":""}' >/dev/null \
+            || echo "freshness: scan failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 근거 스캔 cron (Phase019, 권고 분기) — 무출처 수치 주장 + link rot
+  # (3-strike)를 kind=evidence로 적재한다. 멱등 — 중복 없는 insert. 분기
+  # 주기인 이유: 본문 주장 변화는 느리고 rot 판정은 스캔 3회 연속 실패
+  # 누적이라 과도한 주기는 오탐만 늘린다. body 없음(window 무관).
+  # 켜기: docker compose --profile evidence up -d
+  evidence-scan:
+    image: alpine:3.21
+    profiles: ["evidence"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the evidence scan cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the evidence scan cron}
+      EVIDENCE_PERIOD_SECONDS: ${EVIDENCE_PERIOD_SECONDS:-7776000}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$EVIDENCE_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "evidence: login failed"; continue; }
+          # ② scan — 무출처 주장·link rot 적재 (멱등, link check 포함이라 -m 600)
+          curl -sf -m 600 -X POST http://abloqd:8080/scans/evidence \
+            -H "Authorization: Bearer $$TOKEN" >/dev/null \
+            || echo "evidence: scan failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 클러스터 스캔 cron (Phase019, 권고 분기) — 내부 링크 위반(고립·orphan·
+  # min_internal_links·taxonomy)을 kind=cluster로 적재한다. 멱등 — 중복 없는
+  # insert. 링크 구조 변화는 느려 분기면 충분하다. body 없음.
+  # 켜기: docker compose --profile cluster up -d
+  cluster-scan:
+    image: alpine:3.21
+    profiles: ["cluster"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the cluster scan cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the cluster scan cron}
+      CLUSTER_PERIOD_SECONDS: ${CLUSTER_PERIOD_SECONDS:-7776000}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$CLUSTER_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "cluster: login failed"; continue; }
+          # ② scan — 내부 링크 위반 적재 (멱등)
+          curl -sf -m 600 -X POST http://abloqd:8080/scans/cluster \
+            -H "Authorization: Bearer $$TOKEN" >/dev/null \
+            || echo "cluster: scan failed (next cycle retries)"
+        done
+    restart: unless-stopped
+
+  # 큐 export cron (Phase019, 권고 주간) — 한 사이클이 pull→consumed 감지
+  # →기록→push 전부 수행한다(D4: 이게 안 돌면 백엔드→에이전트 접점 단절).
+  # "월간 export(스캔 직후) + 주간 consumed 동기화"가 전부 이 한 호출의
+  # 멱등 재실행이다 — 전용 endpoint가 없고 필요도 없다: open 행이 있으면
+  # 발급되고, 에이전트가 지운 큐 파일이 있으면 consumed로 동기화되고,
+  # 둘 다 없으면 no-op(커밋 없음)이다. 주간 주기가 월간 스캔 직후 발급을
+  # 늦어도 7일 내 흡수한다. 켜기: docker compose --profile queue up -d
+  queue-export:
+    image: alpine:3.21
+    profiles: ["queue"]
+    depends_on:
+      - abloqd
+    environment:
+      ABLOQD_OPERATOR_EMAIL: ${ABLOQD_OPERATOR_EMAIL:?operator email for the queue export cron}
+      ABLOQD_OPERATOR_PASSWORD: ${ABLOQD_OPERATOR_PASSWORD:?operator password for the queue export cron}
+      QUEUE_EXPORT_PERIOD_SECONDS: ${QUEUE_EXPORT_PERIOD_SECONDS:-604800}
+    command:
+      - sh
+      - -ec
+      - |
+        apk add --no-cache curl jq >/dev/null
+        while true; do
+          sleep "$$QUEUE_EXPORT_PERIOD_SECONDS"
+          # ① login — 매 주기 토큰 발급 (access token TTL 15분)
+          TOKEN=$$(curl -sf -X POST http://abloqd:8080/auth/login \
+            -H 'Content-Type: application/json' \
+            -d "{\"email\":\"$$ABLOQD_OPERATOR_EMAIL\",\"password\":\"$$ABLOQD_OPERATOR_PASSWORD\"}" \
+            | jq -r .access_token) || { echo "queue: login failed"; continue; }
+          # ② export — open 발급 + consumed 동기화 한 사이클 (멱등, git 작업 포함이라 -m 600)
+          curl -sf -m 600 -X POST http://abloqd:8080/queue/export \
+            -H "Authorization: Bearer $$TOKEN" >/dev/null \
+            || echo "queue: export failed (next cycle retries)"
         done
     restart: unless-stopped
 

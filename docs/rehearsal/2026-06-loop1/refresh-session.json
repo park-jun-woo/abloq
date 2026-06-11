@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "key": "ko/tech/post-a",
+      "state": "PASS",
+      "tries": 1,
+      "verdict": "PASS",
+      "reason": "PASS",
+      "collected_at": "2026-06-11T03:53:04Z",
+      "log": [
+        {
+          "try": 1,
+          "outcome": "FAIL",
+          "reason": "queue-scope: content/ko/tech/post-b.md (expected changes limited to the target article, its language companions and insight sidecars, got out-of-scope change: content/ko/tech/post-b.md)"
+        },
+        {
+          "try": 2,
+          "outcome": "PASS",
+          "reason": "PASS"
+        }
+      ],
+      "emitted": true,
+      "payload": {
+        "root": "/tmp/tmp.tBUPZRpeS5/agent",
+        "article": "content/ko/tech/post-a.md",
+        "lang": "ko",
+        "section": "tech",
+        "slug": "post-a",
+        "keys": [
+          "ko/tech/post-a"
+        ],
+        "queue": {
+          "freshness_days": "30",
+          "lastmod": "2026-04-01"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+== 0. build abloqd + abloq CLI, temp postgres (127.0.0.1:55432 trust), stubs
+== 1. blog instance (git) → bare origin → deploy checkout
+== 2. abloqd up (stub-wired)
+== 3. sync + fixture ingest (CF logs, GSC) + freshness scan + export
+POST /sync -> {"synced":2}
+POST /ingest/crawl -> {"files":2,"hits":5}
+GET /crawl-hits -> {"hits":[{"bot":"ChatGPT-User","created_at":"2026-06-11T12:53:03.936231+09:00","hit_date":"2026-06-01T00:00:00Z","hits":1,"id":1,"lang":"ko","md_hits":0,"section":"tech","slug":"post-b"},{"bot":"ClaudeBot","created_at":"2026-06-11T12:53:03.936231+09:00","hit_date":"2026-06-01T00:00:00Z","hits":1,"id":2,"lang":"ko","md_hits":0,"section":"tech","slug":"post-b"},{"bot":"GPTBot","created_at":"2026-06-11T12:53:03.936231+09:00","hit_date":"2026-06-01T00:00:00Z","hits":2,"id":3,"lang":"ko","md_hits":1,"section":"tech","slug":"post-a"}]}
+POST /ingest/gsc -> {"days":3,"inspected":0,"inspections":"[]","rows":6}
+POST /scans/freshness -> {"detected":1}
+POST /queue/export -> {"consumed":0,"exported":1}
+== 4. agent leg — clone, quest scan/next, deliberate FAIL, then PASS
+seeded 1 item(s); 1 total
+ko/tech/post-a -> PASS (state PASS)
+== 5. ① article commit → deploy pull → re-sync recognizes the new lastmod
+POST /sync -> {"synced":2}
+GET /posts -> {"posts":[{"created_at":"2026-06-11T12:53:03.919121+09:00","date":"2026-03-28","id":1,"internal_links":0,"lang":"ko","lastmod":"2026-06-11","section":"tech","slug":"post-a","source_count":1,"title":"Post A","updated_at":"2026-06-11T12:53:04.108414+09:00","url":"https://fixture.example.com/tech/post-a/","word_count":37},{"created_at":"2026-06-11T12:53:03.919121+09:00","date":"2026-06-01","id":2,"internal_links":1,"lang":"ko","lastmod":"2026-06-11","section":"tech","slug":"post-b","source_count":1,"title":"Post B","updated_at":"2026-06-11T12:53:04.108414+09:00","url":"https://fixture.example.com/tech/post-b/","word_count":22}]}
+== 6. /hooks/deployed → /archive/process → receipts done (stub)
+POST /hooks/deployed -> {"planned":3}
+POST /archive/process -> {"deferred":0,"done":3,"failed":0,"processed":3}
+GET /receipts?deploy_id=rehearsal-loop1&status=done -> {"receipts":[{"created_at":"2026-06-11T12:53:04.13615+09:00","deploy_id":"rehearsal-loop1","id":1,"kind":"wayback","status":"done","target":"https://fixture.example.com/tech/post-a/"},{"created_at":"2026-06-11T12:53:04.13615+09:00","deploy_id":"rehearsal-loop1","id":2,"kind":"indexnow","status":"done","target":"https://fixture.example.com/tech/post-a/"},{"created_at":"2026-06-11T12:53:04.13615+09:00","deploy_id":"rehearsal-loop1","id":3,"kind":"gsc_index","status":"done","target":"https://fixture.example.com/tech/post-a/"}]}
+== 7. ② queue-deletion commit → export consumed sync
+POST /queue/export -> {"consumed":1,"exported":0}
+GET /queue?status=consumed -> {"items":[{"created_at":"2026-06-11T12:53:03.966166+09:00","id":1,"kind":"refresh","lang":"ko","priority":3,"slug":"post-a","status":"consumed","updated_at":"2026-06-11T12:53:04.237513+09:00"}]}
+== 8. monthly report — generate + publish to the bare origin
+POST /reports/monthly -> {"articles":2,"published":true,"ym":"2026-06"}
+== 9. evidence inventory

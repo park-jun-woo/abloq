@@ -1,0 +1,148 @@
+# refresh quest — ko/tech/post-a
+
+- instance root: /tmp/tmp.tBUPZRpeS5/agent
+- target article: content/ko/tech/post-a.md — refresh it in the working tree (do NOT commit before submit)
+- stale since: lastmod 2026-04-01 exceeded the 30-day freshness window
+- language companions (keys): ko/tech/post-a
+- submit: abloq quest refresh submit --key ko/tech/post-a --in <submission.json>
+  submission.json: {"article": "content/ko/tech/post-a.md"}
+
+---
+
+# 큐 소비 공통 프로토콜 (Phase018)
+
+백엔드 exporter가 떨어뜨린 `quests/queue/*.yaml`을 소비하는 퀘스트
+(refresh·evidence·cluster) 전부에 적용되는 규약. 큐 파일 1개 = 퀘스트 아이템 1개이고,
+Seed는 priority 내림차순으로 정렬한다(백엔드 스코어러가 매긴 운용 순서).
+
+## 순서 박제 (제출·커밋 순서 — 절대 바꾸지 마라)
+
+1. **작업트리에서 글 수정** — 커밋하지 않은 상태로 둔다.
+2. **submit → PASS** — 게이트는 작업트리(더티) vs git HEAD 기준선으로 판정한다.
+   글 수정을 먼저 커밋하면 작업트리==HEAD가 되어 기준선 룰 전체(honest-lastmod·
+   claim 룰·queue-scope 변경 집합)가 공허 통과한다 — 게이트 무력화이므로 금지.
+3. **① 글 수정 커밋** — PASS 이후에만.
+4. **(해당 시) 번역 재동기화** — lastmod가 갱신됐다면 translation quest로 전 언어
+   재동기화 후 커밋들. 큐 파일의 `keys:`가 전 언어 키를 동반 발급하므로 번역 커밋도
+   honest-lastmod 큐 등재 검사를 통과한다.
+5. **② 큐 파일 삭제 커밋(소비 신호)** — 반드시 마지막. ②를 번역 재동기화보다
+   앞당기면 repo/CI honest-lastmod가 번역 커밋을 재차단한다(Phase017 D4).
+   푸시 후 다음 `POST /queue/export` 회전이 삭제를 status=consumed로 동기화한다.
+
+## queue-scope 규약
+
+- 작업트리 변경 파일 집합(`git status --porcelain`, untracked 포함)은 허용 집합에
+  들어가야 한다: **대상 글 + 그 전 언어 번역본 경로 + insight 사이드카** (+ cluster
+  kind는 payload candidates의 글 경로 추가).
+- **큐 파일 자신은 허용 집합 밖이다** — 게이트 시점에 큐 파일은 무변경이어야 하고,
+  삭제는 ② 커밋에서만 한다. 게이트 전에 지우거나 고치면 queue-scope FAIL이다.
+- blog.yaml·레이아웃·다른 글 수정은 전부 범위 밖 — 사람(운영자)의 몫이다.
+
+## 주장(claim) 라인 규약
+
+- claim-scope/claim-preserved는 **라인 단위** 비교다 — 주장이 든 문단을 리랩(줄바꿈
+  재배치)하면 보존된 주장도 변경으로 검출돼 거짓 FAIL이 난다. **주장 라인은
+  리랩하지 마라.**
+- 큐 payload의 claims 해시 목록에 **없는** 주장은 한 글자도 바꾸지 마라(claim-scope).
+- 주장을 삭제로 "해소"하지 마라 — refresh는 건수 하한(claim-preserved)이 막고,
+  evidence는 출처 추가가 본질이다.
+
+## 치즈 방어 공통 원칙
+
+1. **payload는 Seed 시점에 고정된다** — 작업트리 큐 파일을 고쳐도 게이트가 보는
+   payload는 변하지 않는다.
+2. **기준선은 git HEAD다** — 대상 글이 HEAD에 없으면 제출 자체가 중단된다(에러,
+   try 미소진). 인스턴스를 먼저 커밋 상태로 만들어라.
+3. **빈 diff 무작업 통과는 막혀 있다** — 각 퀘스트의 작업 완수 강제 룰(lastmod 전진,
+   해소 재검)이 "아무것도 안 하고 PASS"를 차단한다.
+4. **MaxTries=3** — FAIL 3회 누적 시 DONE으로 영구 잠금된다. Fact를 정확히 반영해라.
+
+---
+
+# 갱신 퀘스트 — 태스크 트리 (T1~T3)
+
+이 트리는 래칫 상태가 아니다. 래칫(게이트)은 최종 제출물(갱신된 글 1편)만 판정한다.
+아이템은 freshness_days를 초과한 글 1편 — payload의 `lastmod`(현재 값)와
+`freshness_days`(임계)가 발급 근거다.
+
+## T1 — 낡음 진단
+
+- 글의 수치 주장·날짜 언급·제품 버전·외부 링크를 훑고 **시점 의존 정보** 목록을
+  뽑는다 (예: "2024년 기준", 가격, 점유율, API 버전).
+- 각 항목의 현재 사실을 재수집한다 — 출처 URL은 실재(HTTP 200)해야 한다
+  (citation-exists가 신규 인용을 기계 검증한다).
+
+## T2 — 갱신
+
+- 낡은 수치는 **교체**한다 — 삭제가 아니다. 수치 주장 건수는 기준선 이상이어야
+  한다(claim-preserved). 새 수치 주장에는 같은 문단에 출처 링크를 단다
+  (numeric-claim-sourced).
+- 본문에 의미 있는 변경(`geo.min_meaningful_diff` 토큰 이상)을 만든다 —
+  honest-lastmod가 lastmod 갱신과 본문 실변경의 짝을 검사한다.
+- front matter는 **lastmod만** 전진시킨다(front-matter-intact·lastmod-advance).
+  date·title·tags·slug는 그대로.
+- 섹션 구조(인식 섹션의 존재·순서)는 보존한다(section-preserved·section-order).
+
+## T3 — 자기 점검과 제출
+
+- lastmod가 기준선보다 미래인지, 본문 diff가 임계 이상인지, 주장 건수가 줄지
+  않았는지, 변경 파일이 대상 글뿐인지 확인한다.
+- (선택) 의미 수준 보존 REVIEW: 주장 교체의 타당성(낡은 수치 → 올바른 새 수치)은
+  비결정이라 게이트 룰이 아니다. 원하면 별도 컨텍스트 검토자에게 기준선·갱신본
+  쌍을 제시해 소견을 받아라 — 기록 강제 없음.
+
+## 제출
+
+`abloq quest refresh submit --key <key> --in <submission.json>` — submission.json:
+
+```json
+{
+  "article": "content/<lang>/<section>/<slug>.md"
+}
+```
+
+경로는 블로그 루트 기준 상대 경로이고 시드된 대상 경로와 일치해야 한다.
+제출은 **글 수정 커밋 이전**(작업트리 더티 상태)에 한다 — `_queue-protocol.md`의
+순서 박제를 지켜라. FAIL이면 Fact(위치·기대·실제)가 돌아온다 — 수정 후 재제출.
+**MaxTries=3**: FAIL 3회 누적 시 DONE으로 영구 잠금되니 Fact를 정확히 반영해라.
+
+---
+
+# 갱신 퀘스트 — 컨텍스트 규약
+
+freshness 큐(kind=refresh)를 소비하는 에이전트에게 주입되는 규약.
+공통 소비 프로토콜(`_queue-protocol.md`)이 우선한다 — 여기는 갱신 고유 규약만.
+
+## 갱신의 본질
+
+- 갱신은 **낡은 수치·사실의 교체**다. lastmod만 올리는 빈 갱신(빈 diff)은
+  lastmod-advance + honest-lastmod 조합이 차단하고, 주장 삭제로 분량을 줄이는
+  우회는 claim-preserved(건수 하한)가 차단한다.
+- 새로 단 수치 주장은 같은 문단에 출처 링크 필수(numeric-claim-sourced — 기준선
+  대비 신규 주장만 검사). 인용 URL은 실재해야 한다(citation-exists).
+
+## lastmod 규약
+
+- `lastmod`는 기준선(git HEAD)보다 **미래**여야 한다(lastmod-advance). 오늘 날짜로
+  올리는 게 정상이다.
+- lastmod 갱신은 본문 실변경(`geo.min_meaningful_diff` 토큰 diff 이상)과 큐 등재를
+  요구한다(honest-lastmod) — 이 퀘스트의 아이템은 큐 파일에서 왔으므로 등재는
+  이미 충족돼 있다. 큐 파일을 게이트 전에 지우면 등재가 깨진다 — 삭제는 ② 커밋.
+
+## 주장(claim) 처리
+
+- 낡은 수치 주장은 **그 라인에서 새 수치로 교체**한다 — 문단 리랩 금지
+  (claim 룰은 라인 단위 비교다).
+- 주장 건수는 기준선 이상 유지(claim-preserved). 교체는 1:1이 자연스럽고,
+  보강(신규 주장 추가)은 자유다 — 단 출처 필수.
+
+## 금지 사항 (치즈 방어)
+
+1. **빈 갱신 금지** — 본문 무변경 + lastmod 전진은 honest-lastmod FAIL이다.
+2. **주장 삭제로 해소 금지** — claim-preserved가 건수 감소를 FAIL로 막는다.
+3. **front matter 변조 금지** — lastmod 외의 키 변경은 front-matter-intact FAIL.
+4. **범위 밖 파일 변경 금지** — queue-scope가 변경 집합을 기계 검사한다.
+5. **본문 통삭제·재작성 금지** — 갱신은 부분 교체다. 인식 섹션을 떨어뜨리면
+   section-preserved FAIL. (body-lossless는 이 퀘스트에서 배제 — 기존 라인 수정이
+   갱신의 본질이라 무손실 비교와 모순이다.)
+

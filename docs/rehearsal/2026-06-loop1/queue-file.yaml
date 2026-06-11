@@ -1,0 +1,11 @@
+key: "ko/tech/post-a"
+keys:
+  - "ko/tech/post-a"
+kind: "refresh"
+lang: "ko"
+section: "tech"
+slug: "post-a"
+priority: 3
+payload:
+  freshness_days: "30"
+  lastmod: "2026-04-01"

@@ -1,0 +1,14 @@
+bare-origin publication commit for reports/2026-06.md:
+8e41fae6e1459d86c0a3cd6c251ac1d33246203e
+
+8e41fae6e1459d86c0a3cd6c251ac1d33246203e 2026-06-11 12:53:04 +0900 abloqd: publish reports/2026-06.md
+
+ reports/2026-06.md | 32 ++++++++++++++++++++++++++++++++
+ 1 file changed, 32 insertions(+)
+
+full bare-origin history (agent + exporter + report bot):
+9d5d27b seed: rehearsal instance
+4aea88b abloqd: queue export
+63163ef refresh: ko/tech/post-a — figures advanced to 2026 (gate PASS)
+a8dbb30 consume: refresh-ko-tech-post-a.yaml (PASS locked, article committed)
+8e41fae abloqd: publish reports/2026-06.md

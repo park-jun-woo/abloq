@@ -1,0 +1,21 @@
+POST /queue/export (cycle 2):
+{
+    "consumed": 1,
+    "exported": 0
+}
+
+GET /queue?status=consumed:
+{
+    "items": [
+        {
+            "created_at": "2026-06-11T12:53:03.966166+09:00",
+            "id": 1,
+            "kind": "refresh",
+            "lang": "ko",
+            "priority": 3,
+            "slug": "post-a",
+            "status": "consumed",
+            "updated_at": "2026-06-11T12:53:04.237513+09:00"
+        }
+    ]
+}

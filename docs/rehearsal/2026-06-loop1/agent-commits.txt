@@ -1,0 +1,4 @@
+9d5d27b seed: rehearsal instance
+4aea88b abloqd: queue export
+63163ef refresh: ko/tech/post-a — figures advanced to 2026 (gate PASS)
+a8dbb30 consume: refresh-ko-tech-post-a.yaml (PASS locked, article committed)

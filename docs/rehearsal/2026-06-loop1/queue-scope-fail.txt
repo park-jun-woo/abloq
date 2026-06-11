@@ -1,0 +1,2 @@
+ko/tech/post-a -> FAIL (state TODO)
+  - queue-scope: content/ko/tech/post-b.md expected="changes limited to the target article, its language companions and insight sidecars" actual="out-of-scope change: content/ko/tech/post-b.md"
