@@ -44,13 +44,22 @@ func TestEntryFromEntry(t *testing.T) {
 		if de.Name() == "post-b.md" && (e.Slug != "post-b" || e.Title != "post-b" || e.Lastmod != e.Date) {
 			t.Errorf("post-b fallbacks (title→slug, lastmod→date) = %+v", e)
 		}
+		// summary-only article: Summary carries the front matter summary
+		if de.Name() == "post-b.md" && e.Summary != "B 한 줄 요약" {
+			t.Errorf("post-b summary = %q, want front matter summary", e.Summary)
+		}
 	}
 	enDir := filepath.Join(root, "content", "en", "tech")
 	enEntries, err := os.ReadDir(enDir)
 	if err != nil || len(enEntries) != 1 {
 		t.Fatalf("en/tech fixture: err=%v entries=%v", err, enEntries)
 	}
-	if e, ok := entryFromEntry(enDir, b, "en", "tech", enEntries[0]); !ok || e.Slug != "custom-en" {
+	e, ok := entryFromEntry(enDir, b, "en", "tech", enEntries[0])
+	if !ok || e.Slug != "custom-en" {
 		t.Errorf("front matter slug must override the file stem custom.md: ok=%v entry=%+v", ok, e)
+	}
+	// description overrides summary (same priority as pkg/gen/llms)
+	if e.Summary != "en description line" {
+		t.Errorf("description must override summary: Summary = %q", e.Summary)
 	}
 }

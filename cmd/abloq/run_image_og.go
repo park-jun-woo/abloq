@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what image og 실행 본체 — provider 해석(플래그 > blog.yaml image.og > local), local은 RenderOG 직행, AI는 안 해석→건수 echo→안×count 실행→결과·채택 안내
+//ff:what image og 실행 본체 — provider 해석(플래그 > blog.yaml image.og > local), local은 RenderOG 직행, AI는 summary 결선→안 해석→건수 echo→안×count 실행→결과·채택 안내
 //ff:why AI 경로는 generate/check 어디에도 결선되지 않는 명시 호출 1회 — 후보는 검토 후 mv로 채택하는 1회성 자산이다 (BUG002)
 package main
 
@@ -23,7 +23,7 @@ func runImageOG(out io.Writer, opts imageOGOpts) error {
 	if opts.Count < 1 {
 		return fmt.Errorf("--count must be at least 1, got %d", opts.Count)
 	}
-	cfg, err := loadImageOG(out, ".")
+	b, cfg, err := loadImageOG(out, ".")
 	if err != nil {
 		return err
 	}
@@ -38,6 +38,9 @@ func runImageOG(out io.Writer, opts imageOGOpts) error {
 		}
 		return runImageOGLocal(out, opts)
 	}
+	// AI path only: resolve the article summary for prompt context. nil blog
+	// (no blog.yaml) skips resolution and yields "" — never IndexEntries(nil).
+	opts.Summary = resolveOGSummary(out, ".", b, opts.Slug)
 	specs, err := resolveOGVariants(cfg.OG, opts)
 	if err != nil {
 		return err

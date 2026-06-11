@@ -120,7 +120,15 @@ mv files/og/<slug>/minimal-1.webp static/images/<slug>.webp  # 검토 후 채택
   미선언 + `--count>1`의 기본 안 파일명은 예약명 `default-{n}.webp`.
 - `--overlay`는 AI 배경 위에 제목/브랜드를 **결정론적으로** 합성한다(local 카드와
   같은 합성 코드). 프롬프트는 blog.yaml `image.og.prompt`(`{title}`/`{summary}`/`{brand}`
-  치환, 미선언 시 no text·safe margin 포함 내장 템플릿) — 글자는 overlay 담당.
+  치환, 미선언 시 초점 피사체·과노출 방지·no text·1200×630 safe margin 포함 내장 템플릿)
+  — 글자는 overlay 담당.
+- **`{summary}` 자동 결선:** AI provider 경로는 글 front matter 한 줄 요약을 프롬프트에
+  자동 주입한다(CLI 인자는 `(slug, title)` 그대로 — 신규 플래그 없음). 우선순위
+  `description` > `summary`(llms.txt와 동일 → 같은 글이면 같은 값). 매칭은 **기본
+  언어**(`languages[0]`)의 **유효 slug**(front matter `slug` 오버라이드 반영)가 argv slug와
+  일치하는 글 1건. 0건/다건이면 빈 요약 + 진단 1줄(에러 아님), blog.yaml 부재면 결선 스킵.
+- **기본 모델:** gemini 기본은 현세대 `gemini-3-pro-image`. `--model` 또는 blog.yaml
+  `image.og.model`이 항상 최우선.
 - 실행 전 "생성 예정 N건"과 안별 모델을 echo, 성공 경로마다 사용 모델 echo.
   안 일부 실패 시 성공분은 보존하고 exit 1.
 - API 키는 **env 전용**: `GEMINI_API_KEY`(또는 `GOOGLE_API_KEY`). 부재 시 명확한

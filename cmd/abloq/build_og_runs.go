@@ -9,7 +9,8 @@ import (
 
 // buildOGRuns turns normalized variant specs into injected execution pairs:
 // each gets its resolved provider instance and its rendered prompt
-// ({title}/{summary}/{brand} substituted; summary is empty on the CLI path).
+// ({title}/{summary}/{brand} substituted; summary is resolved from the
+// article's front matter, empty on the local/no-blog.yaml paths).
 func buildOGRuns(provider string, specs []blogyaml.OGVariantSpec, opts imageOGOpts) ([]img.OGVariant, error) {
 	var runs []img.OGVariant
 	for _, s := range specs {
@@ -21,7 +22,7 @@ func buildOGRuns(provider string, specs []blogyaml.OGVariantSpec, opts imageOGOp
 			Name:     s.Name,
 			Model:    model,
 			Overlay:  s.Overlay,
-			Prompt:   blogyaml.OGPrompt(s.Prompt, opts.Title, "", opts.Brand),
+			Prompt:   blogyaml.OGPrompt(s.Prompt, opts.Title, opts.Summary, opts.Brand),
 			Provider: p,
 		})
 	}

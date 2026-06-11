@@ -39,9 +39,9 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `geo.min_internal_links` | int | | `2` | 클러스터 게이트 임계 (≥ 0) |
 | `geo.min_meaningful_diff` | int | | `10` | honest-lastmod 임계 — 공백·구두점 정규화 후 토큰 diff가 이 값 미만이면 lastmod 갱신 거부 (≥ 1) |
 | `image.og.provider` | string | | `local` | OG 이미지 provider — `local`(결정론 텍스트 카드) \| `gemini`(AI 배경, opt-in). API 키는 env 전용(`GEMINI_API_KEY` 또는 `GOOGLE_API_KEY`) — **blog.yaml에 키 금지** |
-| `image.og.model` | string | | `""` | provider 모델 id — 빈 값 = provider 기본 모델 |
+| `image.og.model` | string | | `""` | provider 모델 id — 빈 값 = provider 기본 모델. gemini 기본은 현세대 이미지 모델 `gemini-3-pro-image`(권장). `--model`/`image.og.model`이 항상 최우선 |
 | `image.og.overlay` | bool | | `false` | AI 배경 위에 제목/브랜드를 결정론적으로 합성 |
-| `image.og.prompt` | string | | 내장 템플릿 | 사이트 공통 프롬프트 템플릿 — `{title}`/`{summary}`/`{brand}` 치환. 미선언 시 내장 기본(no text·no words·safe margin 포함) |
+| `image.og.prompt` | string | | 내장 템플릿 | 사이트 공통 프롬프트 템플릿 — `{title}`/`{summary}`/`{brand}` 치환. 미선언 시 내장 기본(초점 피사체·과노출 방지·no text·1200×630 safe margin 포함). `{summary}`는 글 front matter `summary`/`description`에서 자동 결선됨(아래 참조) |
 | `image.og.variants` | [object] | | — | 이름 있는 안 프리셋 — `name` 필수(URL-safe·유니크·`default` 예약어 금지), `model`/`overlay`/`prompt`는 미지정 시 상위 상속(명시한 `false`/`""`는 실제 오버라이드) |
 | `deploy.provider` | string | | `s3-cloudfront` | 배포 대상 |
 | `deploy.terraform` | bool | | `false` | IaC 생성 여부 |
@@ -134,6 +134,23 @@ deploy:
 ```
 
 전체 12언어 골든 예제: `pkg/blogyaml/testdata/valid/blog.yaml`
+
+### `{summary}` 자동 결선 (AI provider 경로 한정)
+
+`abloq image og <slug> <title> --provider gemini`는 글 front matter의 한 줄 요약을
+프롬프트 `{summary}` 슬롯에 자동 주입한다. CLI 인자는 그대로 `(slug, title)`이며 별도
+플래그는 없다.
+
+- **소스/우선순위:** front matter `description` > `summary` (Hugo 별칭 `description`이
+  우선). llms.txt와 **동일 우선순위**라 같은 글이면 OG 프롬프트와 llms.txt가 같은 값을 낸다.
+- **매칭:** 인스턴스 루트에서 인덱싱한 **기본 언어**(`languages[0]`) 글 중 **유효 slug**
+  (front matter `slug`가 파일명을 오버라이드)가 argv slug와 일치하는 글. 정확히 1건이면
+  그 요약을 쓴다.
+- **폴백:** 0건(미발견) 또는 2건 이상(모호)이면 빈 요약으로 접고 진단 1줄을 찍는다(에러
+  아님 — og는 글 없이도 도는 명령). blog.yaml이 없으면 결선을 건너뛰고 빈 요약.
+- **글별 컨텍스트 주입 패턴:** 기본 템플릿은 `{summary}`를 문장 끝에 두므로 요약이 비어도
+  자연스럽다. 커스텀 템플릿에서도 종속절로 쓰면 빈 요약 잔여가 안 남는다:
+  `prompt: Photorealistic scene evoking "{summary}".`
 
 ## Go API (`pkg/blogyaml`)
 

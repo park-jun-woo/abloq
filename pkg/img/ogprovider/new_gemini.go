@@ -4,8 +4,10 @@ package ogprovider
 
 import "errors"
 
-// defaultGeminiModel is used when no model is declared anywhere.
-const defaultGeminiModel = "gemini-2.5-flash-image"
+// defaultGeminiModel is used when no model is declared anywhere. Pinned to the
+// current-generation image model per BUG003 §원인B; --model and blog.yaml
+// image.og.model still take precedence over this default.
+const defaultGeminiModel = "gemini-3-pro-image"
 
 // NewGemini resolves credentials and base URL from the environment. A missing
 // API key is a hard error — the caller surfaces it as a clear exit-1 diagnosis.

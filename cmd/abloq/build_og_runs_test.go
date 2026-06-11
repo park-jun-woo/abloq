@@ -1,5 +1,5 @@
 //ff:func feature=cli type=command control=sequence
-//ff:what buildOGRuns 검증 — 안별 Provider 인스턴스 주입·실효 모델 echo·프롬프트 치환(summary 빈 값), provider 해석 실패 즉시 에러
+//ff:what buildOGRuns 검증 — 안별 Provider 인스턴스 주입·실효 모델 echo·프롬프트 치환(opts.Summary 주입), provider 해석 실패 즉시 에러
 package main
 
 import (
@@ -15,7 +15,7 @@ func TestBuildOGRuns(t *testing.T) {
 		{Name: "minimal", Model: "imagen-4", Overlay: true, Prompt: "Art for {title} by {brand}{summary}"},
 		{Name: "photo", Model: ""},
 	}
-	opts := imageOGOpts{Title: "T", Brand: "B"}
+	opts := imageOGOpts{Title: "T", Brand: "B", Summary: "S"}
 	runs, err := buildOGRuns("gemini", specs, opts)
 	if err != nil || len(runs) != 2 {
 		t.Fatalf("runs = %+v, err = %v", runs, err)
@@ -23,8 +23,8 @@ func TestBuildOGRuns(t *testing.T) {
 	if runs[0].Name != "minimal" || runs[0].Model != "imagen-4" || !runs[0].Overlay || runs[0].Provider == nil {
 		t.Errorf("run[0] = %+v, want injected provider with explicit model", runs[0])
 	}
-	if runs[0].Prompt != "Art for T by B" {
-		t.Errorf("prompt = %q, want substituted with empty summary", runs[0].Prompt)
+	if runs[0].Prompt != "Art for T by BS" {
+		t.Errorf("prompt = %q, want substituted with opts.Summary", runs[0].Prompt)
 	}
 	if runs[1].Model == "" || runs[1].Provider == nil {
 		t.Errorf("run[1] = %+v, want default model echo", runs[1])

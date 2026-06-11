@@ -51,6 +51,10 @@ func entryFromEntry(sectionDir string, b *blogyaml.Blog, lang, section string, e
 	if tags == nil {
 		tags = []string{}
 	}
+	summary := fm.Description // description overrides summary (same as pkg/gen/llms)
+	if summary == "" {
+		summary = fm.Summary
+	}
 	return Entry{
 		Lang:          lang,
 		Section:       section,
@@ -63,5 +67,6 @@ func entryFromEntry(sectionDir string, b *blogyaml.Blog, lang, section string, e
 		InternalLinks: internalLinks(body, b.Site.BaseURL),
 		SourceCount:   sourceCount(body, b.Structure.Headings["sources"][lang]),
 		URL:           entryURL(b, lang, section, slug),
+		Summary:       summary,
 	}, true
 }

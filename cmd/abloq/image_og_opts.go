@@ -8,6 +8,10 @@ package main
 // only apply when the flag is absent.
 type imageOGOpts struct {
 	Slug, Title string
+	// Summary is resolved internally from the article's front matter (not a
+	// flag — the CLI surface stays (slug, title)); buildOGRuns injects it into
+	// the {summary} prompt slot. Empty on the local/no-blog.yaml paths.
+	Summary     string
 	Brand       string
 	FontPath    string
 	OutDir      string

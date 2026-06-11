@@ -16,10 +16,19 @@ func TestOGPrompt(t *testing.T) {
 	if !strings.Contains(def, "My Post") {
 		t.Errorf("default template must substitute the title: %q", def)
 	}
-	for _, must := range []string{"No text", "no words", "safe central margin"} {
+	for _, must := range []string{"No text", "no words", "safe central margin", "focal subject", "not overexposed"} {
 		if !strings.Contains(def, must) {
 			t.Errorf("default template missing %q: %q", must, def)
 		}
+	}
+	// empty summary leaves no dangling label (trailing whitespace only)
+	if strings.Contains(def, "{summary}") {
+		t.Errorf("default template left an unsubstituted {summary} slot: %q", def)
+	}
+	// non-empty summary reaches the default template (the {summary} slot exists)
+	withSum := OGPrompt("", "My Post", "quantum compilers explained", "")
+	if !strings.Contains(withSum, "quantum compilers explained") {
+		t.Errorf("default template must carry the summary into the prompt: %q", withSum)
 	}
 	if blank := OGPrompt("   \n", "T", "", ""); !strings.Contains(blank, "No text") {
 		t.Errorf("blank template must fall back to the default: %q", blank)

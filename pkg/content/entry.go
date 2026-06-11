@@ -18,4 +18,10 @@ type Entry struct {
 	InternalLinks int64    `json:"internal_links"`
 	SourceCount   int64    `json:"source_count"`
 	URL           string   `json:"url"`
+	// Summary is the article's one-line abstract (description > summary merge),
+	// surfaced for in-process consumers like OG prompt wiring. json:"-" keeps it
+	// OUT of the posts upsert contract: the JSON keys above mirror the posts
+	// table columns 1:1 (see //ff:why), and a stray summary key would break the
+	// jsonb_to_recordset ingest. Internal-only field — never serialized.
+	Summary string `json:"-"`
 }
