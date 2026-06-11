@@ -21,3 +21,4 @@ backend/arts/
 # 로컬 전용 — 깃 제외
 plans/
 dogfood/
+bugs/
