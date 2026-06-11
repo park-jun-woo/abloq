@@ -13,8 +13,11 @@ func TestParseDefaults(t *testing.T) {
 	if len(diags) != 0 {
 		t.Fatalf("want 0 diagnostics, got %v", diags)
 	}
-	if b.Geo.LlmsTxt != "auto" {
-		t.Errorf("want default llms_txt auto, got %q", b.Geo.LlmsTxt)
+	if b.Geo.LlmsTxt.Mode != "auto" {
+		t.Errorf("want default llms_txt mode auto, got %q", b.Geo.LlmsTxt.Mode)
+	}
+	if !reflect.DeepEqual(b.Geo.LlmsTxt.Languages, []string{"base"}) {
+		t.Errorf("want default llms_txt languages [base], got %v", b.Geo.LlmsTxt.Languages)
 	}
 	if !reflect.DeepEqual(b.Geo.JSONLD, []string{"Article", "Person"}) {
 		t.Errorf("want default jsonld [Article Person], got %v", b.Geo.JSONLD)

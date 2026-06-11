@@ -8,10 +8,11 @@ import (
 )
 
 func TestForbiddenSection(t *testing.T) {
-	out := forbiddenSection()
+	out := forbiddenSection(testBlog())
 	wants := []string{
 		"치즈 방어",
 		"손으로 고치지 않는다",
+		"llms.txt",
 		"honest-lastmod",
 		"citation-exists",
 		"quests/queue/",

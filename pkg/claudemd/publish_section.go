@@ -1,5 +1,5 @@
 //ff:func feature=claudemd type=generator control=sequence
-//ff:what CLAUDE.md 게시 절차 섹션 — 집필 퀘스트 호출 순서(작성→게이트→번역→generate→빌드→postbuild→배포)
+//ff:what CLAUDE.md 게시 절차 섹션 — 집필 퀘스트 호출 순서(작성→게이트→번역→generate→빌드→postbuild→배포), llms.txt 언급은 mode auto일 때만
 package claudemd
 
 import (
@@ -24,7 +24,11 @@ func publishSection(b *blogyaml.Blog) string {
 	sb.WriteString("2. `abloq gate --offline .` — 구조·근거 게이트 통과까지 수정\n")
 	fmt.Fprintf(&sb, "3. 번역: 나머지 언어(%s) 전부에 **동일 slug**로 작성 후 다시 `abloq gate --offline .`\n", strings.Join(rest, ", "))
 	sb.WriteString("   기술 용어는 원문(영문) 유지, 문화적 예시(인물·인사말·역사 사례)는 현지화한다\n")
-	sb.WriteString("4. `abloq generate .` — 글 추가·삭제 시 llms.txt 등 파생물 재생성 (필수)\n")
+	regen := "4. `abloq generate .` — 글 추가·삭제 시 파생물 재생성 (필수)\n"
+	if b.Geo.LlmsTxtMode() == "auto" {
+		regen = "4. `abloq generate .` — 글 추가·삭제 시 llms.txt 등 파생물 재생성 (필수)\n"
+	}
+	sb.WriteString(regen)
 	sb.WriteString("5. `hugo` — 빌드 0 에러 (게이트 전에는 --minify 금지: hreflang 검사가 원본 HTML을 읽는다)\n")
 	sb.WriteString("6. `abloq gate .` — 빌드 후 전체 룰 (hreflang-complete, citation-exists 포함)\n")
 	sb.WriteString("7. `abloq postbuild md .` — 글마다 노이즈 제로 .md 병행 산출 (AI 컨텍스트)\n")

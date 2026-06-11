@@ -12,8 +12,14 @@ func TestDefaultBlog(t *testing.T) {
 	if !b.Site.DefaultLangInSubdir {
 		t.Errorf("want default_lang_in_subdir true by default")
 	}
-	if b.Geo.LlmsTxt != "auto" {
-		t.Errorf("want llms_txt auto, got %q", b.Geo.LlmsTxt)
+	if b.Geo.LlmsTxt.Mode != "auto" {
+		t.Errorf("want llms_txt mode auto, got %q", b.Geo.LlmsTxt.Mode)
+	}
+	if !reflect.DeepEqual(b.Geo.LlmsTxt.Languages, []string{"base"}) {
+		t.Errorf("want llms_txt languages [base], got %v", b.Geo.LlmsTxt.Languages)
+	}
+	if b.Geo.LlmsTxt.MaxSummary != 0 {
+		t.Errorf("want llms_txt max_summary 0 (unlimited), got %d", b.Geo.LlmsTxt.MaxSummary)
 	}
 	if !reflect.DeepEqual(b.Geo.JSONLD, []string{"Article", "Person"}) {
 		t.Errorf("want jsonld [Article Person], got %v", b.Geo.JSONLD)

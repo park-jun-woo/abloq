@@ -26,7 +26,13 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `structure.order` | [string] | | — | 글의 정규 섹션 순서 = 구조 게이트 룰의 입력 |
 | `structure.headings` | map | | — | 헤딩 키 → 언어 코드 → 현지화 헤딩. 기본 언어 항목 필수 |
 | `geo.crawlers` | map | | `{}` | 크롤러 분류/봇 이름 → `allow` \| `block` |
-| `geo.llms_txt` | string | | `auto` | llms.txt 생성 방식 |
+| `geo.llms_txt` | string \| object | | `auto` | llms.txt 생성 선언 — 문자열 단축형(`auto` \| `manual` \| `off`) 또는 아래 객체 폼 |
+| `geo.llms_txt.mode` | string | | `auto` | `auto`(자동 생성·드리프트 게이트) \| `manual`(손큐레이션 — generate/check 불간섭) \| `off`(미생성) |
+| `geo.llms_txt.languages` | string \| [string] | | `base` | 언어 스코프 — `base`(기본 언어 1개) \| `all`(전 언어) \| 선언된 언어의 부분집합(예: `[en, ko]`) |
+| `geo.llms_txt.header` | string | | — | 사이트 포지셔닝 블록(자유 마크다운) — 목록 위에 그대로 삽입 |
+| `geo.llms_txt.pinned` | [object] | | — | 선두 고정 엔트리 — `title`·`url` 필수(절대 URL 또는 `/` 시작), `desc`·`group` 선택. `group`이 섹션 그룹 헤딩과 일치하면 그 그룹 선두에, 아니면 자체 헤딩 그룹으로, 미지정이면 최상단 무헤딩 |
+| `geo.llms_txt.section_labels` | map | | — | 섹션 → 사람이 읽는 그룹 라벨 (키는 선언된 섹션만) |
+| `geo.llms_txt.max_summary` | int | | `0` | 항목 설명문 길이 상한(rune) — 초과 시 절단 + `…`, `0` = 무제한 |
 | `geo.jsonld` | [string] | | `[Article, Person]` | 생성할 JSON-LD 타입 |
 | `geo.freshness_days` | int | | `90` | 신선도 퀘스트 임계 (≥ 1) |
 | `geo.min_sources` | int | | `1` | 근거 게이트 임계 (≥ 0) |
@@ -48,6 +54,17 @@ abloq validate --json [dir]   # 진단을 JSON 배열로 출력
 | `threshold-range` | `freshness_days ≥ 1`, `min_sources ≥ 0`, `min_internal_links ≥ 0`, `min_meaningful_diff ≥ 1` |
 | `baseurl-format` | 절대 http(s) URL, host 존재, query/fragment 없음 |
 | `crawlers-policy` | `geo.crawlers` 값이 `allow` \| `block` |
+| `llmstxt-mode` | `geo.llms_txt` mode가 `auto` \| `manual` \| `off` |
+| `llmstxt-languages` | `geo.llms_txt.languages`가 `base` \| `all` \| 선언된 `languages`의 부분집합 |
+| `llmstxt-pinned` | pinned 각 엔트리에 `title`·`url` 존재, `url`은 절대 http(s) URL 또는 `/` 시작 |
+| `llmstxt-labels` | `geo.llms_txt.section_labels` 키가 선언된 섹션 |
+| `llmstxt-max-summary` | `geo.llms_txt.max_summary ≥ 0` |
+
+## llms.txt 생성 모드
+
+- `auto`(기본) — `abloq generate`가 `static/llms.txt`를 렌더하고 `abloq check`가 드리프트를 잡는다. 기본 언어 스코프는 `base`(정준 언어 가이드) — 전 언어 덤프는 `languages: all`로 옵트인.
+- `manual` — 손큐레이션 모드. generate가 파일을 건드리지 않고 check도 강제하지 않는다 (`static/llms.txt`는 사람/에이전트 소유).
+- `off` — llms.txt를 만들지 않는다. **주의:** `auto`에서 `manual`/`off`로 전환해도 기존에 생성된 `static/llms.txt`는 abloq가 지우지 않는다 — Build 목록 제외 방식이라 잔존 파일에 check가 침묵하므로, `off` 전환 시 기존 파일은 직접 삭제하라.
 
 ## 예제
 
@@ -68,7 +85,19 @@ structure:
 
 geo:
   crawlers: { training: allow, search: allow, fetch: allow, bytespider: block }
-  llms_txt: auto
+  llms_txt: auto                 # 단축형. 또는 객체 폼:
+  # llms_txt:
+  #   mode: auto                 # auto | manual | off
+  #   languages: base            # base | all | [en, ko]
+  #   header: |
+  #     This site publishes ...
+  #   pinned:
+  #     - title: Master Index
+  #       url: /reins.md
+  #       desc: Index of all articles
+  #       group: Core Content
+  #   section_labels: { opinion: Concept, tech: Pattern }
+  #   max_summary: 200
   jsonld: [Article, Person]
   freshness_days: 90
   min_sources: 1

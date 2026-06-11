@@ -4,6 +4,8 @@ package blogyaml
 
 // Geo declares GEO (Generative Engine Optimization) policy and gate thresholds.
 // Crawlers maps crawler category or bot name -> "allow" | "block".
+// LlmsTxt is the normalized llms.txt declaration (string shorthand or object
+// form in blog.yaml — see LlmsTxtSpec).
 // MinMeaningfulDiff is the honest-lastmod token-diff threshold (normalized tokens).
 // Taxonomy is the optional curated tag vocabulary — when absent, the cluster
 // scanner's tag-taxonomy check is silently skipped (Phase011).
@@ -13,7 +15,7 @@ package blogyaml
 // priority scorer.
 type Geo struct {
 	Crawlers          map[string]string `yaml:"crawlers" json:"crawlers"`
-	LlmsTxt           string            `yaml:"llms_txt" json:"llms_txt"`
+	LlmsTxt           LlmsTxtSpec       `yaml:"llms_txt" json:"llms_txt"`
 	JSONLD            []string          `yaml:"jsonld" json:"jsonld"`
 	FreshnessDays     int               `yaml:"freshness_days" json:"freshness_days"`
 	MinSources        int               `yaml:"min_sources" json:"min_sources"`

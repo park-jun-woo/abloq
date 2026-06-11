@@ -1,5 +1,5 @@
 //ff:func feature=gen type=generator control=sequence
-//ff:what llms.txt 렌더가 입력 순서와 무관하게 같은 바이트를 내고 그룹 헤더·글 줄을 정확히 배치하는지 검증
+//ff:what llms.txt 렌더(all 스코프)가 입력 순서와 무관하게 같은 바이트를 내고 언어 접두 그룹 헤더·글 줄을 정확히 배치하는지 검증
 package llms
 
 import (
@@ -13,6 +13,7 @@ func TestRender(t *testing.T) {
 		Site:      blogyaml.Site{BaseURL: "https://x.com", Title: "X Blog", Author: "A", DefaultLangInSubdir: true},
 		Languages: []string{"ko", "en"},
 		Sections:  []string{"opinion"},
+		Geo:       blogyaml.Geo{LlmsTxt: blogyaml.LlmsTxtSpec{Languages: []string{"all"}}},
 	}
 	posts := []Post{
 		{Lang: "en", Section: "opinion", Slug: "e", Title: "E", Date: "2026-01-01"},

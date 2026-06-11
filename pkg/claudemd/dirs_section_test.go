@@ -8,10 +8,11 @@ import (
 )
 
 func TestDirsSection(t *testing.T) {
-	out := dirsSection()
+	out := dirsSection(testBlog())
 	wants := []string{
 		"`blog.yaml` — SSOT",
 		"content/{lang}/{section}/{slug}.md",
+		"`static/llms.txt`",
 		"생성물. 직접 수정 금지",
 		"quests/queue/",
 		"deploy/terraform/",

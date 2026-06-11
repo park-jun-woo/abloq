@@ -11,7 +11,7 @@ func defaultBlog() Blog {
 			DefaultLangInSubdir: true,
 		},
 		Geo: Geo{
-			LlmsTxt:           "auto",
+			LlmsTxt:           LlmsTxtSpec{Mode: "auto", Languages: []string{"base"}},
 			JSONLD:            []string{"Article", "Person"},
 			FreshnessDays:     90,
 			MinSources:        1,

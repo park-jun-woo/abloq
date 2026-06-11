@@ -8,10 +8,10 @@ import "github.com/park-jun-woo/abloq/pkg/blogyaml"
 // operations manual (publish procedure, gates, layout, forbidden moves).
 func Render(b *blogyaml.Blog) []byte {
 	s := headerSection(b) +
-		dirsSection() +
+		dirsSection(b) +
 		structureSection(b) +
 		publishSection(b) +
 		commandsSection() +
-		forbiddenSection()
+		forbiddenSection(b)
 	return []byte(s)
 }
