@@ -17,3 +17,7 @@ backend/arts/
 .env.*
 !.env.example
 .tsma/
+
+# 로컬 전용 — 깃 제외
+plans/
+dogfood/
