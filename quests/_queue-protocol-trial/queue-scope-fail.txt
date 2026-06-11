@@ -1,0 +1,2 @@
+en/posts/stale -> FAIL (state TODO)
+  - queue-scope: content/en/posts/thin.md expected="changes limited to the target article, its language companions and insight sidecars" actual="out-of-scope change: content/en/posts/thin.md"

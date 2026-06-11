@@ -1,0 +1,11 @@
+key: "en/posts/stale"
+keys:
+  - "en/posts/stale"
+kind: "refresh"
+lang: "en"
+section: "posts"
+slug: "stale"
+priority: 20463
+payload:
+  freshness_days: "30"
+  lastmod: "2026-04-01"

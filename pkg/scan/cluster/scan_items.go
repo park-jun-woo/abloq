@@ -18,7 +18,7 @@ func scanItems(posts []post, b *blogyaml.Blog, lang string, tags, inlinks map[st
 		if len(viols) == 0 {
 			continue
 		}
-		items = append(items, clusterItem(p, lang, viols, candidates(p, posts, edges)))
+		items = append(items, clusterItem(p, lang, viols, candidates(p, posts, edges), b.Languages))
 	}
 	return items
 }

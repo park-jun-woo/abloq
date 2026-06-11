@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "key": "en/posts/thin",
+      "state": "PASS",
+      "tries": 0,
+      "verdict": "PASS",
+      "reason": "PASS",
+      "collected_at": "2026-06-11T03:14:31Z",
+      "log": [
+        {
+          "try": 1,
+          "outcome": "PASS",
+          "reason": "PASS"
+        }
+      ],
+      "emitted": true,
+      "payload": {
+        "root": "/tmp/abloq-trial-018/agent",
+        "article": "content/en/posts/thin.md",
+        "lang": "en",
+        "section": "posts",
+        "slug": "thin",
+        "keys": [
+          "en/posts/thin"
+        ],
+        "queue": {
+          "candidates": "[{\"section\":\"posts\",\"slug\":\"sourcing\",\"shared_tags\":1,\"directions\":[\"out\",\"in\"]},{\"section\":\"posts\",\"slug\":\"stale\",\"shared_tags\":1,\"directions\":[\"out\",\"in\"]}]",
+          "violations": "[{\"rule\":\"min-internal-links\",\"detail\":\"outbound internal links 0 below min 1\"},{\"rule\":\"no-isolated-post\",\"detail\":\"no inbound internal links\"}]"
+        }
+      }
+    }
+  ]
+}

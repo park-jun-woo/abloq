@@ -1,5 +1,5 @@
 //ff:func feature=queueio type=generator control=sequence
-//ff:what Serialize가 key 필드(게이트 계약 원문)·고정 필드 순서·payload 키 정렬·빈 payload {}를 바이트 결정적으로 내는지 검증
+//ff:what Serialize가 key 필드(게이트 계약 원문)·keys 블록(선언 순서)·고정 필드 순서·payload 키 정렬·빈 payload {}를 바이트 결정적으로 내는지 검증
 package queueio
 
 import (
@@ -11,10 +11,14 @@ func TestSerialize(t *testing.T) {
 	it := Item{
 		Kind: "refresh", Slug: "post-a", Lang: "ko", Section: "tech",
 		Priority: 20605,
+		Keys:     []string{"ko/tech/post-a", "en/tech/post-a"},
 		Payload:  map[string]string{"lastmod": "2026-06-05", "freshness_days": "1"},
 	}
 	got := string(Serialize(it))
 	want := "key: \"ko/tech/post-a\"\n" +
+		"keys:\n" +
+		"  - \"ko/tech/post-a\"\n" +
+		"  - \"en/tech/post-a\"\n" +
 		"kind: \"refresh\"\n" +
 		"lang: \"ko\"\n" +
 		"section: \"tech\"\n" +
@@ -32,5 +36,8 @@ func TestSerialize(t *testing.T) {
 	empty := string(Serialize(Item{Kind: "refresh", Slug: "s", Lang: "ko", Section: "tech"}))
 	if !strings.HasSuffix(empty, "payload: {}\n") {
 		t.Errorf("empty payload must render {}: %q", empty)
+	}
+	if strings.Contains(empty, "keys:") {
+		t.Errorf("absent keys must omit the keys: block: %q", empty)
 	}
 }

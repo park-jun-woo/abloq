@@ -21,7 +21,7 @@ func unsourcedClaims(a *gate.Article) []ClaimRef {
 		if c.Sourced {
 			continue
 		}
-		refs = append(refs, ClaimRef{Hash: hashText(c.Text), Loc: a.Path + ":" + strconv.Itoa(c.Line), Text: c.Text})
+		refs = append(refs, ClaimRef{Hash: gate.HashText(c.Text), Loc: a.Path + ":" + strconv.Itoa(c.Line), Text: c.Text})
 	}
 	return refs
 }

@@ -3,8 +3,9 @@ public/
 resources/
 .hugo_build.lock
 
-# abloq gate receipts cache
-.abloq/cache/
+# abloq gate caches (citation receipts etc.) — local state; an untracked
+# .abloq/ would otherwise trip the queue quests' queue-scope change-set check
+.abloq/
 
 # Terraform state
 deploy/terraform/.terraform/

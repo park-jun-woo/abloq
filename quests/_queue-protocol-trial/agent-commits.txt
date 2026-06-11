@@ -1,0 +1,8 @@
+b7cde67 consume cluster-en-posts-thin.yaml
+0f301f4 cluster: thin post linked out+in (candidate stale anchor, lastmod unchanged)
+ffb896e consume evidence-en-posts-sourcing.yaml
+1b3bbb3 evidence: sourcing post — queued claim sourced (lastmod unchanged, sub-threshold)
+dbb8d65 consume refresh-en-posts-stale.yaml
+647459d refresh: stale post — adoption figure 40%/2025 -> 62%/2026, lastmod advanced
+53cbca6 abloqd: queue export
+bc3d288 trial fixture: 3 posts

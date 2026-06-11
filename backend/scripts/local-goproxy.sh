@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Build a file:// GOPROXY that serves three local modules:
-#   github.com/park-jun-woo/abloq   @ $1 (default v0.0.11) — staged from the
+#   github.com/park-jun-woo/abloq   @ $1 (default v0.0.12) — staged from the
 #     working tree (go.mod/go.sum/pkg only; bump on every pkg/ change: the go
 #     module index caches same-version republish)
 #   github.com/park-jun-woo/toulmin @ v0.1.0 — staged from the git tag
@@ -24,7 +24,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
-VERSION="${1:-v0.0.11}"
+VERSION="${1:-v0.0.12}"
 PROXY="${ABLOQ_GOPROXY_DIR:-/tmp/abloq-goproxy}"
 REINS_DIR="${REINS_DIR:-$ROOT/../reins}"
 TOULMIN_DIR="${TOULMIN_DIR:-$ROOT/../toulmin}"

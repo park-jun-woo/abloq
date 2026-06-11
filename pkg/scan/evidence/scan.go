@@ -15,5 +15,5 @@ func Scan(root string, b *blogyaml.Blog, prev []Check, ck *Checker) Result {
 	cites := collectCitations(arts)
 	statuses := ck.CheckAll(citeURLs(cites))
 	checks := nextChecks(prev, cites, statuses)
-	return Result{Items: scanItems(arts, checks), Checks: checks}
+	return Result{Items: scanItems(arts, checks, b.Languages), Checks: checks}
 }

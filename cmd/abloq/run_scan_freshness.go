@@ -29,7 +29,7 @@ func runScanFreshness(out io.Writer, dir string) error {
 		return err
 	}
 	scorer := priority.Composite{W: priority.WeightsOf(b.Geo.PriorityWeights)}
-	items := freshness.Scan(entries, map[string]priority.Signals{}, b.Geo.FreshnessDays, time.Now().UTC(), scorer)
+	items := freshness.Scan(entries, map[string]priority.Signals{}, b.Languages, b.Geo.FreshnessDays, time.Now().UTC(), scorer)
 	queueDir := filepath.Join(dir, "quests", "queue")
 	if err := queueio.WriteDir(queueDir, items); err != nil {
 		return err

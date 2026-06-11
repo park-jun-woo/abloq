@@ -17,7 +17,7 @@ func TestScanItems(t *testing.T) {
 	cleanArt.Slug = "clean-post"
 	checks := []Check{{URL: "https://gone.example/x", Lang: "ko", Section: "tech", Slug: "rot-post",
 		Status: "hard", ConsecutiveFailures: 3}}
-	items := scanItems([]*gate.Article{claimsArt, rotArt, cleanArt}, checks)
+	items := scanItems([]*gate.Article{claimsArt, rotArt, cleanArt}, checks, []string{"ko"})
 	if len(items) != 2 {
 		t.Fatalf("want 2 items, got %d: %+v", len(items), items)
 	}

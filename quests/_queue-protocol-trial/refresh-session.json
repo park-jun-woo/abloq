@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "key": "en/posts/stale",
+      "state": "PASS",
+      "tries": 1,
+      "verdict": "PASS",
+      "reason": "PASS",
+      "collected_at": "2026-06-11T03:14:08Z",
+      "log": [
+        {
+          "try": 1,
+          "outcome": "FAIL",
+          "reason": "queue-scope: content/en/posts/thin.md (expected changes limited to the target article, its language companions and insight sidecars, got out-of-scope change: content/en/posts/thin.md)"
+        },
+        {
+          "try": 2,
+          "outcome": "PASS",
+          "reason": "PASS"
+        }
+      ],
+      "emitted": true,
+      "payload": {
+        "root": "/tmp/abloq-trial-018/agent",
+        "article": "content/en/posts/stale.md",
+        "lang": "en",
+        "section": "posts",
+        "slug": "stale",
+        "keys": [
+          "en/posts/stale"
+        ],
+        "queue": {
+          "freshness_days": "30",
+          "lastmod": "2026-04-01"
+        }
+      }
+    }
+  ]
+}

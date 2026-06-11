@@ -2,7 +2,11 @@
 //ff:what unsourcedClaims 케이스 — 무출처 주장만 해시·path:line·원문으로 수집, 출처 있는 문단·claims_ignore 예외는 제외
 package evidence
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/park-jun-woo/abloq/pkg/gate"
+)
 
 func TestUnsourcedClaims(t *testing.T) {
 	b := testBlog(t)
@@ -19,7 +23,7 @@ func TestUnsourcedClaims(t *testing.T) {
 	if refs[0].Loc != "content/ko/tech/fixture.md:5" {
 		t.Errorf("loc must be repo-relative path:line, got %q", refs[0].Loc)
 	}
-	if refs[0].Hash != hashText(refs[0].Text) {
+	if refs[0].Hash != gate.HashText(refs[0].Text) {
 		t.Errorf("hash must key on the claim text")
 	}
 	exempt := "---\ntitle: T\nclaims_ignore:\n  - \"own benchmark\"\n---\n\n처리량이 40% 증가했다.\n"

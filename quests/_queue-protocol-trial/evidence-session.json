@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "items": [
+    {
+      "key": "en/posts/sourcing",
+      "state": "PASS",
+      "tries": 0,
+      "verdict": "PASS",
+      "reason": "PASS",
+      "collected_at": "2026-06-11T03:14:18Z",
+      "log": [
+        {
+          "try": 1,
+          "outcome": "PASS",
+          "reason": "PASS"
+        }
+      ],
+      "emitted": true,
+      "payload": {
+        "root": "/tmp/abloq-trial-018/agent",
+        "article": "content/en/posts/sourcing.md",
+        "lang": "en",
+        "section": "posts",
+        "slug": "sourcing",
+        "keys": [
+          "en/posts/sourcing"
+        ],
+        "queue": {
+          "claims": "[{\"hash\":\"d481fd8aea2c4f77\",\"loc\":\"content/en/posts/sourcing.md:12\",\"text\":\"Latency dropped 35% after the cache rollout.\"}]"
+        }
+      }
+    }
+  ]
+}

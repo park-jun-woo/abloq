@@ -1,5 +1,5 @@
 //ff:func feature=scan type=generator control=sequence
-//ff:what candidate가 refresh kind·근거 payload·우선순위(신호 맵의 hits 우선, date 폴백)를 채우는지 검증
+//ff:what candidate가 refresh kind·근거 payload·전 언어 keys·우선순위(신호 맵의 hits 우선, date 폴백)를 채우는지 검증
 package freshness
 
 import (
@@ -12,7 +12,7 @@ import (
 func TestCandidate(t *testing.T) {
 	e := content.Entry{Lang: "ko", Section: "tech", Slug: "post-a", Date: "2026-06-01", Lastmod: "2026-06-05"}
 	signals := map[string]priority.Signals{"ko/tech/post-a": {Hits: 3}}
-	it := candidate(e, signals, 90, priority.ColdStart{})
+	it := candidate(e, signals, []string{"ko", "en"}, 90, priority.ColdStart{})
 	if it.Kind != "refresh" || it.Priority != 3 {
 		t.Errorf("unexpected item: %+v", it)
 	}
@@ -22,9 +22,12 @@ func TestCandidate(t *testing.T) {
 	if it.Payload["section"] != "" {
 		t.Error("section must stay a first-class field, not payload")
 	}
+	if len(it.Keys) != 2 || it.Keys[0] != "ko/tech/post-a" || it.Keys[1] != "en/tech/post-a" {
+		t.Errorf("keys must cover every declared language: %v", it.Keys)
+	}
 	// Measured signals reach the scorer through the same map.
 	signals["ko/tech/post-a"] = priority.Signals{FetcherHits: 2, GSCTrend: 10}
-	it = candidate(e, signals, 90, priority.Composite{W: priority.Weights{Fetcher: 3, GSC: 1}})
+	it = candidate(e, signals, []string{"ko", "en"}, 90, priority.Composite{W: priority.Weights{Fetcher: 3, GSC: 1}})
 	if it.Priority != 16 {
 		t.Errorf("measured priority must be the weighted sum: %d", it.Priority)
 	}

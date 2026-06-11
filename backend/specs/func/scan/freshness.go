@@ -79,6 +79,6 @@ func Freshness(req FreshnessRequest) (FreshnessResponse, error) {
 	signals := report.MergeSignals(pfreshness.SignalsMap(sums),
 		report.BotTotals(bots), report.PageTotals(pages, urls), report.CiteHits(cites))
 	scorer := priority.Composite{W: priority.WeightsOf(b.Geo.PriorityWeights)}
-	items := pfreshness.Scan(entries, signals, b.Geo.FreshnessDays, time.Now().UTC(), scorer)
+	items := pfreshness.Scan(entries, signals, b.Languages, b.Geo.FreshnessDays, time.Now().UTC(), scorer)
 	return FreshnessResponse{ItemsJSON: pqueueio.EncodeRows(items), Detected: int64(len(items))}, nil
 }

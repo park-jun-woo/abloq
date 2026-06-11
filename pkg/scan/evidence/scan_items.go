@@ -11,7 +11,7 @@ import (
 // that has unsourced claims, confirmed rot, or both. One item per article is
 // the queue's idempotent key contract — claims and rot of the same article
 // share a key by design (final consistency over payload merge).
-func scanItems(arts []*gate.Article, checks []Check) []queueio.Item {
+func scanItems(arts []*gate.Article, checks []Check, langs []string) []queueio.Item {
 	items := make([]queueio.Item, 0)
 	for _, a := range arts {
 		claims := unsourcedClaims(a)
@@ -19,7 +19,7 @@ func scanItems(arts []*gate.Article, checks []Check) []queueio.Item {
 		if len(claims) == 0 && len(rots) == 0 {
 			continue
 		}
-		items = append(items, evidenceItem(a, claims, rots))
+		items = append(items, evidenceItem(a, claims, rots, langs))
 	}
 	return items
 }

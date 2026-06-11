@@ -1,5 +1,5 @@
 //ff:func feature=queueio type=generator control=sequence
-//ff:what EncodeRows가 section을 payload 안에 넣은 적재 JSON을 내고 DecodeRows가 이를 원형 복원하는지 검증 (왕복 동등)
+//ff:what EncodeRows가 section·keys를 payload 안에 넣은 적재 JSON을 내고 DecodeRows가 이를 원형 복원하는지 검증 (왕복 동등)
 package queueio
 
 import (
@@ -10,7 +10,8 @@ import (
 func TestEncodeRowsRoundTrip(t *testing.T) {
 	items := []Item{{
 		Kind: "refresh", Slug: "post-a", Lang: "ko", Section: "tech",
-		Priority: 20605, Payload: map[string]string{"lastmod": "2026-06-05"},
+		Priority: 20605, Keys: []string{"ko/tech/post-a", "en/tech/post-a"},
+		Payload: map[string]string{"lastmod": "2026-06-05"},
 	}}
 	rows, err := DecodeRows(EncodeRows(items))
 	if err != nil {

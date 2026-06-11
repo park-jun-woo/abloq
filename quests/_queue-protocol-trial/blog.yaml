@@ -1,0 +1,17 @@
+site:
+  baseURL: https://trial.example.com
+  title: Queue Trial
+  author: Trial Operator
+  default_lang_in_subdir: false
+
+languages: [en]
+sections: [posts]
+
+structure:
+  order: [body, sources]
+  headings:
+    sources: { en: "Sources" }
+
+geo:
+  freshness_days: 30
+  min_internal_links: 1

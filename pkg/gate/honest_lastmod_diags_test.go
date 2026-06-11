@@ -23,7 +23,7 @@ func TestHonestLastmodDiags(t *testing.T) {
 	checkDiags(t, diags, 1, "honest-lastmod", "not in the freshness queue")
 
 	queueFile := filepath.Join(queueDir, "freshness.yaml")
-	if err := os.WriteFile(queueFile, []byte("- key: en/tech/base\n"), 0o644); err != nil {
+	if err := os.WriteFile(queueFile, []byte("key: \"en/tech/base\"\n"), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	if got := honestLastmodDiags(tgt, a); len(got) != 0 {
