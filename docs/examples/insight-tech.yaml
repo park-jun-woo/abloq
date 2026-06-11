@@ -1,0 +1,26 @@
+# 예제 1 — 기술 글 (en 기본 언어 블로그, 글: content/en/tech/ratchet-pattern.md)
+# text는 저자 언어(한국어), anchors는 글 언어(영어).
+topic: "Ratchet Pattern — 에이전트가 일을 끝까지 하게 만드는 구조"
+stance: "완료 판정은 LLM이 아니라 결정적 검증기가 내려야 한다"
+audience: "AI 에이전트로 작업을 자동화하는 개발자"
+section: tech
+tags: ["Ratchet Pattern", "agent"]
+claims:
+  - id: llm-no-self-judgment
+    text: "LLM은 스스로 작업 완료를 판정할 수 없다"
+    kind: claim
+    requires_source: true
+    anchors: ["cannot be trusted to judge", "self-correct"]
+  - id: machine-decides-completion
+    text: "종료 결정을 기계에 넘기면 에이전트는 완주한다"
+    kind: claim
+    requires_source: false
+    anchors: ["who decides when it's over", "machine decides"]
+  - id: verifier-must-be-deterministic
+    text: "검증기는 결정적이어야 한다 — '더 깔끔해 보인다'는 검증기가 아니다"
+    kind: claim
+    requires_source: false
+    anchors: ["verifier must be deterministic", "machine-checkable"]
+non_goals:
+  - "특정 모델 간 벤치마크 비교"
+tone: "단정적, 실측 수치 중심"

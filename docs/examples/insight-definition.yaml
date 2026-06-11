@@ -1,0 +1,26 @@
+# 예제 3 — 정의 글 (en 기본 언어 블로그, 글: content/en/tech/what-is-geo.md)
+# 용어를 정의하는 글 — definition kind가 본론, claim이 보조.
+topic: "GEO(Generative Engine Optimization)란 무엇인가"
+stance: "GEO는 SEO의 별책이 아니라 AI 인용 가시성의 독립 분과다"
+audience: "블로그를 AI 검색 시대에 맞게 운영하려는 사람"
+section: tech
+tags: ["GEO", "AI search"]
+claims:
+  - id: geo-definition
+    text: "GEO = 생성 엔진(AI 답변)이 내 콘텐츠를 인용하게 만드는 최적화"
+    kind: definition
+    requires_source: false
+    anchors: ["generative engine optimization", "cited by AI"]
+  - id: geo-vs-seo
+    text: "SEO는 순위, GEO는 인용 — 측정 단위가 다르다"
+    kind: definition
+    requires_source: false
+    anchors: ["ranking", "citation"]
+  - id: citation-evidence
+    text: "출처·통계·인용 추가가 AI 인용률을 유의하게 올린다"
+    kind: claim
+    requires_source: true
+    anchors: ["+40%", "statistics"]
+non_goals:
+  - "특정 SEO 도구 리뷰"
+tone: "교과서식, 용어 먼저 정의"

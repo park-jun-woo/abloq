@@ -25,6 +25,7 @@ func TestRender(t *testing.T) {
 		`defaultContentLanguage = "ko"`,
 		"defaultContentLanguageInSubdir = true",
 		"enableRobotsTXT = false",
+		`ignoreFiles = ['insight\.yaml$']`,
 		`author = "A"`,
 		"[sitemap]",
 		"[languages.en]",

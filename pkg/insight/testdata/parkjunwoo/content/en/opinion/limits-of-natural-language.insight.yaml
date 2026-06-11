@@ -1,0 +1,43 @@
+# 역명세 픽스처 — parkjunwoo.com opinion/limits-of-natural-language.md (en 기본 언어)
+# claims.text는 저자 언어(한국어), anchors는 글 언어(영어) — 가이드 규약의 실증.
+# planted-unrelated는 의도적 무관 claim — match 미출현 목록 검출 검증용.
+topic: "제3의 문자 — AI의 추론을 기록하는 언어"
+stance: "AI의 추론을 기록·축적하는 제3의 언어를 의도적으로 설계해야 한다"
+audience: "AI 시대의 문명사적 전환에 관심 있는 일반 독자"
+section: opinion
+tags: ["AI era", "humanities", "history"]
+claims:
+  - id: spoken-language-tribe
+    text: "음성 언어가 부족이라는 사회 규모를 만들었다"
+    kind: claim
+    requires_source: false
+    anchors: ["Spoken language created the tribe"]
+  - id: writing-state
+    text: "문자는 정보를 시간에 고정해 관료제·법·제국, 곧 국가를 가능하게 했다"
+    kind: claim
+    requires_source: false
+    anchors: ["Writing created the state", "fixed information onto time"]
+  - id: ai-no-record
+    text: "AI는 자연어로 추론하고 결과를 버린다 — 기록하지 않고 축적하지 않는다"
+    kind: claim
+    requires_source: false
+    anchors: ["It does not record", "does not accumulate"]
+  - id: pre-writing-city-analogy
+    text: "지금의 AI는 문자 발명 이전의 도시와 같은 상태다 — 돌아가지만 규모가 막힌다"
+    kind: rebuttal
+    requires_source: false
+    anchors: ["a city before the invention of writing"]
+  - id: third-language-civilization
+    text: "의도적으로 설계된 제3의 언어는 아직 이름 없는 규모의 문명을 만들 것이다"
+    kind: prediction
+    requires_source: false
+    anchors: ["third language", "civilization of a scale"]
+  - id: planted-unrelated
+    text: "양자 컴퓨터는 현행 공개키 암호를 무력화한다"
+    kind: claim
+    requires_source: true
+    anchors: ["quantum computer", "post-quantum cryptography"]
+non_goals:
+  - "특정 표기 체계(설형문자·한글)의 기술적 우열 비교"
+  - "구체적 언어 명세 제안"
+tone: "사적·문명사적 스케일, 짧은 단문"

@@ -1,0 +1,48 @@
+# 역명세 픽스처 — parkjunwoo.com tech/ratchet-pattern.md (en 기본 언어)
+# claims.text는 저자 언어(한국어), anchors는 글 언어(영어) — 가이드 규약의 실증.
+# planted-unrelated는 의도적 무관 claim — match 미출현 목록 검출 검증용.
+topic: "Ratchet Pattern — 에이전트가 일을 끝까지 하게 만드는 구조"
+stance: "완료 판정은 LLM이 아니라 결정적 검증기가 내려야 한다"
+audience: "AI 에이전트로 작업을 자동화하는 개발자"
+section: tech
+tags: ["Ratchet Pattern", "agent", "AI"]
+claims:
+  - id: llm-no-self-judgment
+    text: "LLM은 스스로 작업 완료를 판정할 수 없다 — 외부 피드백 없는 자기 수정은 오히려 성능을 떨어뜨린다"
+    kind: claim
+    requires_source: true
+    anchors: ["cannot be trusted to judge", "Self-Correct"]
+  - id: machine-decides-completion
+    text: "차이는 모델 성능이 아니라 누가 종료를 결정하느냐다 — 기계가 결정하면 527개를 완주한다"
+    kind: claim
+    requires_source: true
+    anchors: ["who decides when it's over", "527 / 527"]
+  - id: ratchet-definition
+    text: "래칫 패턴 = 확률적 에이전트를 결정적 상태 기계 안에 두는 구조"
+    kind: definition
+    requires_source: false
+    anchors: ["probabilistic agent inside a deterministic state machine"]
+  - id: agent-not-lying
+    text: "40개에서 멈춘 것은 거짓말이 아니다 — LLM의 낙관적 자기 판정이다"
+    kind: rebuttal
+    requires_source: false
+    anchors: ["wasn't lying", "LLMs are optimistic"]
+  - id: feedback-resolution
+    text: "피드백 해상도가 높을수록 LLM의 수정 정확도가 오르고 루프 반복과 비용이 준다"
+    kind: claim
+    requires_source: true
+    anchors: ["feedback resolution increases", "gradient signal"]
+  - id: progress-survives
+    text: "에이전트는 죽어도 진행 상태는 저장소에 남아 다음 에이전트가 이어간다"
+    kind: claim
+    requires_source: false
+    anchors: ["Agents are disposable", "Progress accumulates"]
+  - id: planted-unrelated
+    text: "쿠버네티스 오토스케일링은 LLM 추론 비용을 줄인다"
+    kind: claim
+    requires_source: true
+    anchors: ["kubernetes autoscaling", "horizontal pod autoscaler"]
+non_goals:
+  - "특정 모델 간 벤치마크 비교"
+  - "에이전트 프레임워크 구현 코드 강의"
+tone: "단정적, 실측 수치 중심"

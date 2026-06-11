@@ -1,6 +1,7 @@
 //ff:func feature=gen type=generator control=sequence
-//ff:what blog.yaml에서 hugo.toml 바이트를 렌더 — baseURL/기본 언어/sitemap/언어 블록, 같은 입력이면 바이트 동일
+//ff:what blog.yaml에서 hugo.toml 바이트를 렌더 — baseURL/기본 언어/ignoreFiles/sitemap/언어 블록, 같은 입력이면 바이트 동일
 //ff:why [permalinks] 블록을 내지 않는다 — Hugo 기본 경로 URL(파일명=slug, 번들=디렉토리명)이 게이트의 slug 계약과 정확히 일치하고, :slug 토큰은 제목 폴백이라 비ASCII 제목에서 계약을 깬다 (Phase005에서 발견)
+//ff:why ignoreFiles는 무조건 방출한다 — Hugo가 번들 리소스 insight.yaml을 public에 복사하는 것을 막는 결선, 콘텐츠 조건부 방출은 Render 바이트 결정성 계약 위반 (Phase015)
 package hugo
 
 import (
@@ -25,6 +26,7 @@ func Render(b *blogyaml.Blog) []byte {
 	fmt.Fprintf(&sb, "defaultContentLanguage = %s\n", strconv.Quote(defaultLang))
 	fmt.Fprintf(&sb, "defaultContentLanguageInSubdir = %t\n", b.Site.DefaultLangInSubdir)
 	sb.WriteString("enableRobotsTXT = false\n")
+	sb.WriteString("ignoreFiles = ['insight\\.yaml$']\n")
 	sb.WriteString("\n[params]\n")
 	fmt.Fprintf(&sb, "author = %s\n", strconv.Quote(b.Site.Author))
 	sb.WriteString("\n[sitemap]\n")

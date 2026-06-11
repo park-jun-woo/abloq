@@ -1,0 +1,26 @@
+# 예제 2 — 의견 글 (ko 기본 언어 블로그, 글: content/ko/opinion/seonrye-wa-jinsil.md)
+# 기본 언어가 한국어인 블로그 — text와 anchors가 같은 언어일 수도 있다.
+topic: "선례는 진실이 아니다"
+stance: "선례는 참조일 뿐 구속이 아니다 — 갱신 비용이 낮아진 시대에는 더욱"
+audience: "관행을 근거로 결정을 미루는 조직의 의사결정자"
+section: opinion
+tags: ["의사결정", "조직"]
+claims:
+  - id: precedent-is-sample
+    text: "선례는 과거 조건에서 나온 표본 1개일 뿐, 일반 법칙이 아니다"
+    kind: claim
+    requires_source: false
+    anchors: ["표본", "과거의 조건"]
+  - id: rebut-stability
+    text: "'선례가 안정성을 준다'는 반론 — 안정성의 실체는 검증 가능성이지 반복이 아니다"
+    kind: rebuttal
+    requires_source: false
+    anchors: ["안정성", "검증 가능"]
+  - id: cheap-revision-era
+    text: "갱신 비용이 낮아질수록 선례의 가치는 떨어진다"
+    kind: prediction
+    requires_source: false
+    anchors: ["갱신 비용", "다시 쓰는 비용"]
+non_goals:
+  - "법률상 판례 제도 비판"
+tone: "단문, 사례 먼저"

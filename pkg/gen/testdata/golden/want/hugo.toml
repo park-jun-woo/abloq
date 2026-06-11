@@ -4,6 +4,7 @@ title = "Golden Blog"
 defaultContentLanguage = "ko"
 defaultContentLanguageInSubdir = true
 enableRobotsTXT = false
+ignoreFiles = ['insight\.yaml$']
 
 [params]
 author = "Gold Author"
